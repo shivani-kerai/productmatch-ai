@@ -1,0 +1,12 @@
+project:
+  name: productmatch-ai
+  version: 0.1.0
+  phase: session-1-starter
+
+dataset:
+  name: WDC Products (planned)
+  source: https://webdatacommons.org/largescaleproductcorpus/wdc-products/index.html
+  status: not_downloaded
+  expected_task: pairwise_entity_matching
+
+# Configuration loading, experiment configuration, and ML training are not yet implemented.

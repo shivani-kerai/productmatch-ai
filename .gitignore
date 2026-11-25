@@ -1,0 +1,46 @@
+# Python / virtual environments
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Datasets: do not commit licensed or large data
+/data/raw/*
+!/data/raw/.gitkeep
+/data/interim/*
+!/data/interim/.gitkeep
+/data/processed/*
+!/data/processed/.gitkeep
+
+# Generated artifacts and reports
+/artifacts/*
+!/artifacts/.gitkeep
+/reports/*
+!/reports/.gitkeep
+/mlruns/
+/mlartifacts/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
