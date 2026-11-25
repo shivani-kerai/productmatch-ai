@@ -7,7 +7,7 @@ represent the **same sellable product**. It will combine product attribute norma
 lexical and semantic retrieval, supervised pairwise matching, confidence calibration,
 human review, API serving, evaluation, and monitoring.
 
-> **Current status: Session 1 starter (v0.1.0).** The repository is runnable and tested,
+> **Current status: Session 2 development (v0.2.0).** The repository is runnable and tested,
 > but **does not contain a trained matching model, a production match decision, or WDC
 > benchmark data**. The demonstration CLI computes simple text features only.
 
@@ -151,3 +151,59 @@ It does not train a model, download benchmark data, or deploy anything.
 
 Project code is MIT-licensed (see `LICENSE`). **Third-party datasets, pretrained models,
 and external content retain their own usage terms and are not covered by this license.**
+
+
+---
+
+## Session 2 — WDC benchmark ingestion and EDA (feature branch)
+
+This adds **schema-validated ingestion, deterministic preparation of the official
+pairwise splits, leakage audit, EDA notebook, offline fixture tests, and data provenance**.
+No benchmark data, model, or model metrics are committed.
+
+The official [WDC Products](https://webdatacommons.org/largescaleproductcorpus/wdc-products/index.html)
+50% corner-case **pairwise archive** contains multiple development sizes and seen/unseen
+test variants. We select the 6,000-pair **medium** train, 3,500-pair validation and
+two 4,500-pair test variants (0% and 100% unseen). These are the publisher's splits,
+**not** random reshuffles.
+
+### Setup and download (PowerShell)
+
+```powershell
+# Run from project root, in your existing venv
+.\.venv\Scripts\python.exe -m pip install -e ".[dev,data]"
+
+# Download the official 50pair.zip once (roughly 21.6 MB)
+.\.venv\Scripts\python.exe scripts/download_wdc.py
+
+# Inspect member names BEFORE loading or overriding a split
+.\.venv\Scripts\python.exe scripts/prepare_data.py --list-members
+
+# Validate the official sizes/splits, audit leakage, write Parquet + manifest
+.\.venv\Scripts\python.exe scripts/prepare_data.py
+
+# Generate EDA using train and validation only
+.\.venv\Scripts\python.exe scripts/run_eda.py
+
+# Verify all tests
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+If the ZIP's internal naming differs from auto-discovery, inspect the printed member
+names and specify all four exact paths using `--train-member`,
+`--validation-member`, `--test-seen-member`, and `--test-unseen-member`.
+The loader **fails rather than silently selecting the wrong benchmark files**.
+
+Outputs are local and gitignored: `data/processed/wdc50_medium/{train,validation,test_seen,test_unseen}.parquet`,
+`manifest.json`, and `reports/wdc_eda/` (JSON plus PNG charts).
+Open `notebooks/01_wdc_eda.ipynb` with Jupyter or VS Code, using the editable
+project environment. If needed, install Jupyter separately.
+
+**Reproducibility:** input ZIP SHA-256, chosen member filenames, split counts,
+class balance, processing version and offer-overlap checks are captured in the
+manifest. Offer overlap is forbidden across train/validation and each test split;
+alternative test variants are allowed to share test offers with each other.
+
+**Important:** Only synthetic fixtures were executed in CI; actual archive processing
+requires running the download and preparation commands locally. See
+[Session 2 walkthrough](docs/session2.md) and the [data card](docs/data_card.md).

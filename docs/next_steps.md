@@ -1,22 +1,14 @@
-# Session 2: WDC ingestion and EDA — implementation plan
+# Next milestone — Session 3: Baseline product matching
 
-Once Session 1 quality checks pass:
+Session 2 introduces the WDC download helper, benchmark-aware schema validation, source split selection, deterministic Parquet preparation, leakage audit, EDA script/notebook, and fixture tests.
 
-1. Use the **official** WDC Products benchmark page to select and download one
-   **pairwise** benchmark configuration. Do not silently swap in the older WDC LSPM
-   dataset; it is a different resource with potentially different schemas.
-2. Record archive filename, download URL, checksum, extraction method and license.
-3. Inspect actual raw columns, nested product objects, label values and data types.
-4. Implement `src/productmatch/data/ingestion.py` and `validation.py` based on the
-   verified real schema. Do not hardcode guessed raw column names.
-5. Implement `scripts/prepare_data.py`, generating local processed Parquet files.
-6. Create `notebooks/01_data_exploration.ipynb` for label distribution, attributes,
-   missingness, brand, pack sizes and hard negatives.
-7. Build a lexical pairwise baseline and log validation metrics.
-8. Add deterministic unit tests with tiny fabricated fixtures (not copyrighted data).
-9. Compare default-threshold and tuned-threshold precision/recall and F1; tune only
-   on validation. Keep official test splits sealed until final reporting.
-10. Submit a small pull request with a summary of data-quality findings.
+Once you download the official archive locally, verify the printed member list and manifest; compare row counts and inspect the EDA reports. Please do **not** publish the raw data without checking its terms.
 
-**Definition of done:** a documented dataset manifest, reproducible preparation
-script, data validation tests, and a baseline evaluation report.
+Then implement:
+
+1. Feature extraction on official train/validation split (token Jaccard, character similarity, brand/model/quantity checks).
+2. Transparent rule baseline and logistic regression; log model parameters and train-only feature transforms.
+3. Precision, recall, F1 and PR-AUC on validation, with simple confidence intervals.
+4. Hard-negative error analysis; avoid turning entity-cluster identifiers into predictive features.
+5. Save fitted model, feature schema, and evaluation report with versioned metadata.
+6. Keep the official seen/unseen test splits sealed until final comparisons.
