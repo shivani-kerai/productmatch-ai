@@ -115,11 +115,14 @@ def test_score_model_and_no_model(client: TestClient, tmp_path: Path) -> None:
     )
     with TestClient(app) as empty:
         assert empty.post("/v1/match", json=data, headers=headers()).status_code == 503
-        assert empty.post(
-            "/v1/search",
-            json={"query": data["left"]},
-            headers=headers(),
-        ).status_code == 503
+        assert (
+            empty.post(
+                "/v1/search",
+                json={"query": data["left"]},
+                headers=headers(),
+            ).status_code
+            == 503
+        )
 
 
 def test_rerank_requires_model_or_scores_candidates(client: TestClient) -> None:
@@ -167,9 +170,7 @@ def test_strict_payload_validation_and_limits(client: TestClient) -> None:
         headers=headers(),
     )
     assert response.status_code == 422
-    assert client.get(
-        "/v1/reviews?limit=1000", headers=headers(reviewer=True)
-    ).status_code == 422
+    assert client.get("/v1/reviews?limit=1000", headers=headers(reviewer=True)).status_code == 422
 
 
 def test_reject_incompatible_model(tmp_path: Path, catalog_csv: Path) -> None:

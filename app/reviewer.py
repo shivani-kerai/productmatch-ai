@@ -18,9 +18,7 @@ def call_api(method: str, path: str, *, payload: dict | None = None) -> dict | l
     headers = {"X-API-Key": st.session_state.api_key}
     if path.startswith("/v1/reviews"):
         headers["X-Review-Token"] = st.session_state.review_token
-    response = requests.request(
-        method, API_URL + path, headers=headers, json=payload, timeout=20
-    )
+    response = requests.request(method, API_URL + path, headers=headers, json=payload, timeout=20)
     if not response.ok:
         raise ValueError(f"API {response.status_code}: {response.text[:350]}")
     return response.json()
@@ -66,14 +64,17 @@ with tabs[0]:
             ):
                 st.write("Brand:", item["brand"], " · Offer ID:", item["offer_id"])
                 decision = st.radio(
-                    "Decision", ["match", "nonmatch", "unsure"],
-                    horizontal=True, key=f"decision_{i}"
+                    "Decision",
+                    ["match", "nonmatch", "unsure"],
+                    horizontal=True,
+                    key=f"decision_{i}",
                 )
                 notes = st.text_area("Review notes", key=f"notes_{i}")
                 if st.button("Save review", key=f"save_{i}"):
                     try:
                         record = call_api(
-                            "POST", "/v1/reviews",
+                            "POST",
+                            "/v1/reviews",
                             payload={
                                 "query": st.session_state.query,
                                 "candidate": {
@@ -96,7 +97,8 @@ with tabs[1]:
     if st.button("Score product pair"):
         try:
             prediction = call_api(
-                "POST", "/v1/match",
+                "POST",
+                "/v1/match",
                 payload={"left": {"title": left_title}, "right": {"title": right_title}},
             )
             st.metric("Match probability", f"{prediction['match_probability']:.3f}")

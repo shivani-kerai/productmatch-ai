@@ -90,9 +90,7 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
         }
 
     @app.post("/v1/match", response_model=ScoreResponse)
-    def score_pair(
-        body: ScoreRequest, _: None = Depends(_require_api_key)
-    ) -> ScoreResponse:
+    def score_pair(body: ScoreRequest, _: None = Depends(_require_api_key)) -> ScoreResponse:
         runtime = app.state.runtime
         if runtime.model is None or runtime.threshold is None:
             raise HTTPException(status_code=503, detail="Matching model not configured")
@@ -106,9 +104,7 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
         )
 
     @app.post("/v1/search", response_model=SearchResponse)
-    def search(
-        body: SearchRequest, _: None = Depends(_require_api_key)
-    ) -> SearchResponse:
+    def search(body: SearchRequest, _: None = Depends(_require_api_key)) -> SearchResponse:
         runtime = app.state.runtime
         if runtime.retriever is None:
             raise HTTPException(status_code=503, detail="Product catalog not configured")
