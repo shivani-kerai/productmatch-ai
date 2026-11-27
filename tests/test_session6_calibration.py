@@ -258,8 +258,7 @@ def test_connected_graph_stays_strict_by_default(
     report = tmp_path / "calibration.json"
     with pytest.raises(ValueError, match="too few independent"):
         fit_calibration(
-            data_dir=directory, model_path=model,
-            output_path=artifact, report_path=report
+            data_dir=directory, model_path=model, output_path=artifact, report_path=report
         )
     assert not artifact.exists()
     assert not report.exists()
@@ -306,7 +305,8 @@ def test_explicit_dev_calibration_produces_no_audit_claim(
             "development_only_full_validation"
         )
         response = client.post(
-            "/v1/match", headers=headers,
+            "/v1/match",
+            headers=headers,
             json={"left": {"title": "Acme 250 ml"}, "right": {"title": "Acme 250ml"}},
         )
         assert response.status_code == 200

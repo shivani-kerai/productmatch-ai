@@ -66,8 +66,10 @@ def split_for_calibration(
         raise ValueError("need at least 8 labeled binary pairs")
     groups = offer_component_groups(pairs)
     if len(np.unique(groups)) < 4:
-        raise ValueError("too few independent offer components to split; collect separate labels "
-            "or explicitly use --development-only for unaudited calibration")
+        raise ValueError(
+            "too few independent offer components to split; collect separate labels "
+            "or explicitly use --development-only for unaudited calibration"
+        )
     for attempt in range(80):
         splitter = GroupShuffleSplit(
             n_splits=1, test_size=audit_fraction, random_state=seed + attempt

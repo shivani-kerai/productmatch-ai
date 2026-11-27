@@ -74,18 +74,12 @@ def fit_calibration(
         if len(audit_idx)
         else np.array([], dtype=float)
     )
-    audit_raw = (
-        reliability_metrics(diagnostic_labels, diagnostic_raw) if len(audit_idx) else None
-    )
+    audit_raw = reliability_metrics(diagnostic_labels, diagnostic_raw) if len(audit_idx) else None
     audit_calibrated = (
-        reliability_metrics(diagnostic_labels, diagnostic_calibrated)
-        if len(audit_idx)
-        else None
+        reliability_metrics(diagnostic_labels, diagnostic_calibrated) if len(audit_idx) else None
     )
     audit_raw_metrics = (
-        classification_metrics(diagnostic_labels, diagnostic_raw, 0.5)
-        if len(audit_idx)
-        else None
+        classification_metrics(diagnostic_labels, diagnostic_raw, 0.5) if len(audit_idx) else None
     )
     audit_tuned_metrics = (
         classification_metrics(diagnostic_labels, diagnostic_calibrated, cutoff)
