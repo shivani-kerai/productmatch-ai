@@ -88,9 +88,16 @@ def error_analysis(
     preds = (probabilities >= threshold).astype(int)
     incorrect = labels != preds
     cols = [
-
+        name
+        for name in (
+            "pair_id",
+            "title_left",
+            "title_right",
+            "brand_left",
+            "brand_right",
             "is_hard_negative",
-
+        )
+        if name in validation
     ]
     errors = validation.loc[incorrect, cols].copy()
     errors["true_label"] = labels[incorrect]

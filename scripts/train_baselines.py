@@ -15,12 +15,14 @@ from productmatch.models.training import train_baselines
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-
+    parser.add_argument("--data-dir", type=Path, default=Path("data/processed/wdc50_medium"))
+    parser.add_argument("--report-dir", type=Path, default=Path("reports/session3_baselines"))
+    parser.add_argument("--artifact-dir", type=Path, default=Path("artifacts/session3_baselines"))
     parser.add_argument("--models", nargs="+", choices=MODEL_CHOICES, default=list(MODEL_CHOICES))
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     args = parser.parse_args()
     results = train_baselines(
-
+        args.data_dir, args.report_dir, args.artifact_dir, model_names=args.models, seed=args.seed
     )
     print(
         json.dumps(
@@ -35,7 +37,12 @@ def main() -> None:
                             "average_precision"
                         ],
                         "f1_at_0_5": details["default_threshold_metrics"]["f1"],
-
+                        "f1_at_tuned_threshold": details["validation_tuned_threshold_metrics"][
+                            "f1"
+                        ],
+                        "selected_threshold": details["validation_tuned_threshold_metrics"][
+                            "threshold"
+                        ],
                     }
                     for name, details in results["models"].items()
                 },
