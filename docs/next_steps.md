@@ -1,22 +1,15 @@
-# Session 2: WDC ingestion and EDA — implementation plan
+# Next milestone — Session 4: retrieval + ranking
 
-Once Session 1 quality checks pass:
+Session 3 adds explicit pairwise feature engineering, logistic regression and
+LightGBM, development validation threshold tuning, AP/F1, hard-negative error
+analysis, saved artifacts and reproducibility metadata.
 
-1. Use the **official** WDC Products benchmark page to select and download one
-   **pairwise** benchmark configuration. Do not silently swap in the older WDC LSPM
-   dataset; it is a different resource with potentially different schemas.
-2. Record archive filename, download URL, checksum, extraction method and license.
-3. Inspect actual raw columns, nested product objects, label values and data types.
-4. Implement `src/productmatch/data/ingestion.py` and `validation.py` based on the
-   verified real schema. Do not hardcode guessed raw column names.
-5. Implement `scripts/prepare_data.py`, generating local processed Parquet files.
-6. Create `notebooks/01_data_exploration.ipynb` for label distribution, attributes,
-   missingness, brand, pack sizes and hard negatives.
-7. Build a lexical pairwise baseline and log validation metrics.
-8. Add deterministic unit tests with tiny fabricated fixtures (not copyrighted data).
-9. Compare default-threshold and tuned-threshold precision/recall and F1; tune only
-   on validation. Keep official test splits sealed until final reporting.
-10. Submit a small pull request with a summary of data-quality findings.
-
-**Definition of done:** a documented dataset manifest, reproducible preparation
-script, data validation tests, and a baseline evaluation report.
+Next:
+1. Run Session 3 locally on the full WDC train and safe validation sets.
+2. Inspect high-confidence false positives for size, pack count and model variants.
+3. Add calibrated probability metrics with proper held-out calibration splits.
+4. Construct a **separate labeled retrieval evaluation dataset** (catalog/query
+   design); pairwise pairs are insufficient to claim catalog Recall@K.
+5. Benchmark candidate generation (BM25 and embeddings) with Recall@K, latency,
+   and realistic catalog cardinality.
+6. Preserve unseen/seen official test files until final evaluation.

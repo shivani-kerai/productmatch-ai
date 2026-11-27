@@ -1,12 +1,13 @@
 project:
   name: productmatch-ai
-  version: 0.1.0
-  phase: session-1-starter
+  version: 0.3.0
+  phase: session-3-supervised-baselines
 
 dataset:
-  name: WDC Products (planned)
+  name: WDC Products pairwise
   source: https://webdatacommons.org/largescaleproductcorpus/wdc-products/index.html
-  status: not_downloaded
-  expected_task: pairwise_entity_matching
-
-# Configuration loading, experiment configuration, and ML training are not yet implemented.
+  raw_data_committed: false
+  training: data/processed/wdc50_medium/train.parquet
+  validation: data/processed/wdc50_medium/validation_safe.parquet
+  test_policy: sealed-until-final-model
+  random_seed: 42
