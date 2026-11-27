@@ -34,6 +34,12 @@ jobs:
       - name: Tests and coverage
         run: python -m pytest -q --cov=productmatch --cov-report=term-missing --cov-fail-under=75
 
+      - name: External evaluation and report CLI smoke tests
+        run: |
+          python scripts/evaluate_independent.py --help
+          python scripts/build_portfolio_report.py --help
+          python scripts/smoke_local_api.py --help
+
       - name: Calibration CLI smoke test
         run: python scripts/calibrate_model.py --help
 
