@@ -55,7 +55,7 @@ def validate_pairs(records: list[Mapping[str, object]], split: str) -> pd.DataFr
     if df["pair_id"].duplicated().any():
         raise DatasetValidationError(f"{split}: duplicate pair_id")
     unordered = pd.Series(
-        [tuple(sorted((int(a), int(b)))) for a, b in zip(df["id_left"], df["id_right"])],
+        [tuple(sorted((int(a), int(b)))) for a, b in zip(df["id_left"], df["id_right"], strict=True)],
         dtype="object",
     )
     if unordered.duplicated().any():

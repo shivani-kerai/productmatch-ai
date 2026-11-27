@@ -43,7 +43,7 @@ def main() -> None:
     )
 
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-    for ax, (name, frame) in zip(axes, frames.items()):
+    for ax, (name, frame) in zip(axes, frames.items(), strict=True):
         frame["label"].value_counts().reindex([0, 1], fill_value=0).plot.bar(ax=ax)
         ax.set(title=f"{name} label distribution", xlabel="0=nonmatch, 1=match",
                ylabel="Pairs")
