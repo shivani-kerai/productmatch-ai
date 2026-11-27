@@ -207,3 +207,14 @@ alternative test variants are allowed to share test offers with each other.
 **Important:** Only synthetic fixtures were executed in CI; actual archive processing
 requires running the download and preparation commands locally. See
 [Session 2 walkthrough](docs/session2.md) and the [data card](docs/data_card.md).
+
+
+### WDC 50% pairwise validation-overlap handling
+
+If preparation reports a handful of shared offer IDs between **validation** and
+**test_seen**, inspect them with `scripts/inspect_wdc_overlap.py` and run
+`scripts/prepare_data.py --quarantine-validation-overlap`. This explicit,
+audited option retains all original official splits and produces a separate
+`validation_safe.parquet` for model tuning. `scripts/run_eda.py` uses the safe
+copy. See [Session 2 documentation](docs/session2.md) for the observed source
+inconsistency and evaluation limitations.

@@ -24,9 +24,17 @@ def main() -> None:
     args = parser.parse_args()
 
     # Do not load test_seen.parquet or test_unseen.parquet during development.
+    # Model-development EDA defaults to the quarantined validation copy
+    # when present; do not silently inspect the contaminated official split.
+    safe_validation = args.data / "validation_safe.parquet"
+    if not safe_validation.is_file():
+        raise FileNotFoundError(
+            "validation_safe.parquet is required. Re-run scripts/prepare_data.py "
+            "(add --quarantine-validation-overlap if source validation overlaps tests)."
+        )
     frames = {
-        split: pd.read_parquet(args.data / f"{split}.parquet")
-        for split in ("train", "validation")
+        "train": pd.read_parquet(args.data / "train.parquet"),
+        "validation": pd.read_parquet(safe_validation),
     }
     summary = development_summary(frames)
     args.output.mkdir(parents=True, exist_ok=True)

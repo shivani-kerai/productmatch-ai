@@ -115,3 +115,52 @@ def test_eda_excludes_tests(mini_zip: Path, tmp_path: Path) -> None:
     assert profile_split(validation)["positive"] == 1
     with pytest.raises(ValueError, match="exactly train and validation"):
         development_summary({"train": train})
+
+
+def test_source_validation_overlap_requires_explicit_quarantine(
+    tmp_path: Path,
+) -> None:
+    """Replicate real WDC symptom without touching official source splits."""
+    archive = tmp_path / "contaminated.zip"
+    members = {
+        "training/wdcproducts50cc50rnd000un_train_medium.json.gz": [
+            record(1, 2, 1),
+        ],
+        "validation/wdcproducts50cc50rnd000un_valid_medium.json.gz": [
+            record(3, 4, 1), record(5, 6, 0),
+        ],
+        "test/wdcproducts50cc50rnd000un_gs.json.gz": [
+            record(3, 7, 0),
+        ],
+        "test/wdcproducts50cc50rnd100un_gs.json.gz": [
+            record(8, 9, 1),
+        ],
+    }
+    with ZipFile(archive, "w") as zf:
+        for member, rows in members.items():
+            payload = "".join(json.dumps(row) + "\n" for row in rows)
+            zf.writestr(member, gzip.compress(payload.encode("utf-8")))
+
+    destination = tmp_path / "processed"
+    with pytest.raises(DatasetValidationError, match="validation and test_seen"):
+        prepare_dataset(archive, destination, enforce_official_counts=False)
+    assert not (destination / "manifest.json").exists()
+
+    manifest = prepare_dataset(
+        archive,
+        destination,
+        enforce_official_counts=False,
+        quarantine_validation_overlap=True,
+    )
+    assert manifest["source_offer_overlap_counts"]["validation_vs_test_seen"] == 1
+    assert manifest["offer_overlap_audit"]["validation_vs_test_seen"] == 0
+    assert manifest["validation_quarantine"]["excluded_offer_ids"] == [3]
+    assert manifest["validation_quarantine"]["excluded_pair_count"] == 1
+    assert manifest["validation_quarantine"]["safe_pair_count"] == 1
+    assert len(pd.read_parquet(destination / "validation.parquet")) == 2
+    assert list(pd.read_parquet(destination / "validation_safe.parquet")["pair_id"]) == [
+        "5#6"
+    ]
+    assert list(pd.read_parquet(destination / "test_seen.parquet")["pair_id"]) == [
+        "3#7"
+    ]

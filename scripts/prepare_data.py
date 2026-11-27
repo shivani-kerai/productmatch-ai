@@ -28,6 +28,14 @@ def main() -> None:
     parser.add_argument("--test-seen-member")
     parser.add_argument("--test-unseen-member")
     parser.add_argument(
+        "--quarantine-validation-overlap", action="store_true",
+        help=(
+            "Keep all official splits unchanged and additionally write a "
+            "validation_safe.parquet with validation pairs involving "
+            "test-overlapping offer IDs excluded; record the exclusions."
+        ),
+    )
+    parser.add_argument(
         "--skip-official-count-check", action="store_true",
         help="Allow small development fixtures, NOT recommended for actual WDC",
     )
@@ -47,6 +55,7 @@ def main() -> None:
     manifest = prepare_dataset(
         args.source, args.output, member_overrides=overrides,
         enforce_official_counts=not args.skip_official_count_check,
+        quarantine_validation_overlap=args.quarantine_validation_overlap,
     )
     print(json.dumps(manifest, indent=2))
 
