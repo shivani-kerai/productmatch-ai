@@ -7,7 +7,6 @@ import pandas as pd
 from sklearn.metrics import (
     average_precision_score,
     confusion_matrix,
-    f1_score,
     precision_recall_curve,
     precision_recall_fscore_support,
 )

@@ -31,6 +31,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev,data,models]"
 
+      - name: Tests and coverage
+        run: python -m pytest -q --cov=productmatch --cov-report=term-missing --cov-fail-under=75
+
       - name: Ruff lint
         run: python -m ruff check .
 
@@ -39,9 +42,6 @@ jobs:
 
       - name: Verify Session 3 CLI
         run: python scripts/train_baselines.py --help
-
-      - name: Tests and coverage
-        run: python -m pytest -q --cov=productmatch --cov-report=term-missing --cov-fail-under=75
 
       - name: CLI smoke test
         run: python -m productmatch normalize "Dove Body-Wash 250ML"
