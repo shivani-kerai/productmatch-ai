@@ -30,6 +30,8 @@ class ScoreResponse(StrictModel):
     match_probability: float = Field(ge=0, le=1)
     threshold: float = Field(ge=0, le=1)
     is_match: bool
+    calibrated: bool = False
+    calibration_policy: str | None = None
     warning: str
 
 

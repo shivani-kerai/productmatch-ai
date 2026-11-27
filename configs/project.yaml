@@ -1,7 +1,7 @@
 project:
   name: productmatch-ai
-  version: 0.5.0
-  phase: session-5-api-review-ui
+  version: 0.6.0
+  phase: session-6-calibration-monitoring
 
 dataset:
   name: WDC Products pairwise

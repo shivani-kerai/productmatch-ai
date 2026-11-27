@@ -11,9 +11,11 @@ import hmac
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi.responses import PlainTextResponse
 
-from productmatch.api.runtime import Runtime, ServiceConfig, match_scores
+from productmatch.api.metrics import RequestMetrics, monotonic_seconds
+from productmatch.api.runtime import Runtime, ServiceConfig
 from productmatch.api.schemas import (
     Product,
     ReviewRecord,
@@ -53,10 +55,25 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
 
     app = FastAPI(
         title="ProductMatch AI",
-        version="0.5.0",
-        description="Local-only product matching prototype; not production-calibrated.",
+        version="0.6.0",
+        description="Local prototype with optional model-bound development calibration.",
         lifespan=lifespan,
     )
+
+    app.state.metrics = RequestMetrics()
+
+    @app.middleware("http")
+    async def observe_request(request: Request, call_next):
+        start = monotonic_seconds()
+        status_code = 500
+        try:
+            response = await call_next(request)
+            status_code = response.status_code
+            return response
+        finally:
+            app.state.metrics.observe(
+                request.method, request.url.path, status_code, monotonic_seconds() - start
+            )
 
     def _require_api_key(
         x_api_key: Annotated[str | None, Header(alias="X-API-Key")] = None,
@@ -78,6 +95,10 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok", "service": "productmatch-ai"}
 
+    @app.get("/metrics")
+    def metrics(_: None = Depends(_require_api_key)) -> PlainTextResponse:
+        return PlainTextResponse(app.state.metrics.exposition(), media_type="text/plain")
+
     @app.get("/ready")
     def ready(_: None = Depends(_require_api_key)) -> dict[str, object]:
         runtime = app.state.runtime
@@ -87,6 +108,9 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
             "model_ready": runtime.model is not None,
             "catalog_size": len(runtime.catalog),
             "model_name": runtime.model_name,
+            "model_fingerprint": runtime.model_fingerprint,
+            "calibrated": runtime.calibrator is not None,
+            "calibration_policy": runtime.calibration_policy,
         }
 
     @app.post("/v1/match", response_model=ScoreResponse)
@@ -94,13 +118,25 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
         runtime = app.state.runtime
         if runtime.model is None or runtime.threshold is None:
             raise HTTPException(status_code=503, detail="Matching model not configured")
-        probability = match_scores(runtime.model, [(_offer(body.left), _offer(body.right))])[0]
+        probability = runtime.score_pairs([(_offer(body.left), _offer(body.right))])[0]
         return ScoreResponse(
             model_name=runtime.model_name or "unknown",
             match_probability=probability,
             threshold=runtime.threshold,
             is_match=probability >= runtime.threshold,
-            warning="Development validation threshold; not a calibrated production decision.",
+            calibrated=runtime.calibrator is not None,
+            calibration_policy=runtime.calibration_policy,
+            warning=(
+                "Development-only calibration fitted on all validation pairs; "
+                "NO independent audit or production calibration claim."
+                if runtime.calibration_policy == "development_only_full_validation"
+                else (
+                    "Development-calibrated on previously model-selected validation; "
+                    "not independently validated for production."
+                    if runtime.calibrator is not None
+                    else "Development validation threshold; not a calibrated production decision."
+                )
+            ),
         )
 
     @app.post("/v1/search", response_model=SearchResponse)
@@ -117,7 +153,7 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
         if body.method == "reranked":
             selected = initial
             pairs = [(query, runtime.offers[candidate_id]) for candidate_id, _ in selected]
-            scores = match_scores(runtime.model, pairs)
+            scores = runtime.score_pairs(pairs)
             initial = sorted(
                 [
                     (candidate_id, probability)

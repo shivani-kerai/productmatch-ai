@@ -1,14 +1,14 @@
-# Session 6 — hardening, calibration and monitored deployment
+# Next milestone — Session 7: model validation and portfolio-ready demonstration
 
-Session 5 includes a local FastAPI prototype, Streamlit reviewer interface,
-SQLite feedback store, Docker image and offline API tests.
+Session 6 implements score calibration diagnostics, SHA-256-bound local
+calibration, authenticated request monitoring and deployment safeguards.
 
-Before production deployment:
-1. Replace developer API keys with managed secrets and proper identity/role auth.
-2. Add migrations, persistent database encryption and reviewer audit policies.
-3. Implement signed, versioned, trusted model artifact distribution.
-4. Calibrate scores on an independent validation partition and define review bands.
-5. Add request rate limiting, structured logging, observability and p95 latency checks.
-6. Benchmark with a fully judged query/catalog retrieval dataset.
-7. Add a hardened deployment configuration and separate environment approvals.
-8. Never expose the development UI or model joblib loader to untrusted users.
+Next:
+1. Collect **independent, exhaustively judged** retrieval queries to report
+   meaningful catalog Recall@K instead of known-positive recovery.
+2. Create fresh label data untouched by model selection, then evaluate Brier
+   score, ECE, PR-AUC, F1 and confidence bands without tuning on this holdout.
+3. Add structured deployment logging, managed secrets and OAuth/RBAC.
+4. Benchmark P95 latency under load and record corpus indexing time.
+5. Provision private infrastructure and explicitly approve any deployment.
+6. Produce a project demo, architectural diagram and truthful benchmark report.
