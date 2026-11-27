@@ -110,6 +110,7 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
             "model_name": runtime.model_name,
             "model_fingerprint": runtime.model_fingerprint,
             "calibrated": runtime.calibrator is not None,
+            "calibration_policy": runtime.calibration_policy,
         }
 
     @app.post("/v1/match", response_model=ScoreResponse)
@@ -124,11 +125,17 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
             threshold=runtime.threshold,
             is_match=probability >= runtime.threshold,
             calibrated=runtime.calibrator is not None,
+            calibration_policy=runtime.calibration_policy,
             warning=(
-                "Development-calibrated on previously model-selected validation; "
-                "not independently validated for production."
-                if runtime.calibrator is not None
-                else "Development validation threshold; not a calibrated production decision."
+                "Development-only calibration fitted on all validation pairs; "
+                "NO independent audit or production calibration claim."
+                if runtime.calibration_policy == "development_only_full_validation"
+                else (
+                    "Development-calibrated on previously model-selected validation; "
+                    "not independently validated for production."
+                    if runtime.calibrator is not None
+                    else "Development validation threshold; not a calibrated production decision."
+                )
             ),
         )
 

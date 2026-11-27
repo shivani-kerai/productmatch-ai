@@ -52,6 +52,39 @@ The API checks the model checksum and fails startup on mismatch.
 Only load model and calibration joblib files from trusted local operators;
 pickle/joblib is unsafe for untrusted files.
 
+
+### WDC connected-offer calibration failure and explicit opt-in
+
+The original WDC safe validation has been observed to fail the strict
+offer-component split with `ValueError: too few independent offer components`.
+That error is intentional. A large connected graph of shared offers cannot
+be divided into disjoint groups just by selecting different pairs.
+
+**Default (strict)**: the command `scripts/calibrate_model.py` still
+refuses to fit if it cannot construct genuinely offer-disjoint calibration
+and diagnostic partitions.
+
+**Explicit development-only opt-in**: to demonstrate sigmoid calibration
+using all 3,473 leakage-safe validation pairs, without making test claims, run:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/calibrate_model.py --development-only
+```
+
+The resulting report records `calibration_policy =
+development_only_full_validation`, `calibration_pairs` equal to the full
+validation count, `audit_pairs = 0`, `audit_available = false`, and
+all `audit_*` metrics as JSON `null`—**not zero**. The separate
+`fit_*_reliability_in_sample` values are optimistically fitted-data
+descriptions, not held-out calibration measurements. No row-random split is
+performed. All official test data remains sealed, and the training model
+weights are not changed. The API exposes the calibration policy in protected
+`/ready` and `/v1/match` responses.
+
+To measure genuine out-of-sample calibration, collect independently labeled
+new product pairs with disjoint offers and keep them separate from every
+model-selection and calibration fitting step.
+
 ## Local API setup
 
 Configure independent, strong secrets in PowerShell or an ignored .env file.

@@ -119,7 +119,7 @@ def match_scores(model: object, pairs: list[tuple[Offer, Offer]]) -> list[float]
     return scores.tolist()
 
 
-def load_calibration(path: Path, model_path: Path) -> tuple[object, float]:
+def load_calibration(path: Path, model_path: Path) -> tuple[object, float, str]:
     """Refuse stale calibration when the serving model bytes differ."""
     payload = joblib.load(path)
     if not isinstance(payload, dict) or payload.get("schema_version") != 1:
@@ -136,7 +136,14 @@ def load_calibration(path: Path, model_path: Path) -> tuple[object, float]:
     threshold = float(payload.get("decision_threshold", -1))
     if not np.isfinite(threshold) or not 0 <= threshold <= 1:
         raise ValueError("invalid calibrated decision threshold")
-    return estimator, threshold
+    policy = str(payload.get("calibration_policy", "unspecified_development"))
+    if policy not in {
+        "development_only_full_validation",
+        "offer_disjoint_development_audit",
+        "unspecified_development",
+    }:
+        raise ValueError("unrecognized calibration policy")
+    return estimator, threshold, policy
 
 
 class Runtime:
@@ -147,6 +154,7 @@ class Runtime:
         self.model_name: str | None = None
         self.threshold: float | None = None
         self.calibrator: object | None = None
+        self.calibration_policy: str | None = None
         self.model_fingerprint: str | None = None
         self.catalog: tuple[Offer, ...] = ()
         self.offers: dict[str, Offer] = {}
@@ -158,7 +166,7 @@ class Runtime:
             self.model, self.threshold, self.model_name = load_model(config.model_path)
             self.model_fingerprint = file_sha256(config.model_path)[:12]
             if config.calibration_path is not None:
-                self.calibrator, self.threshold = load_calibration(
+                self.calibrator, self.threshold, self.calibration_policy = load_calibration(
                     config.calibration_path, config.model_path
                 )
         if config.catalog_path is not None:

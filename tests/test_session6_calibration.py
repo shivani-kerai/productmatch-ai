@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 
 import joblib
@@ -25,6 +26,7 @@ from productmatch.evaluation.calibration import (
     split_for_calibration,
 )
 from productmatch.features.pairwise import FEATURE_NAMES
+from scripts.calibrate_model import fit_calibration
 
 
 def make_pairs(n: int = 40) -> pd.DataFrame:
@@ -198,3 +200,115 @@ def test_service_refuses_missing_auth_secrets(tmp_path: Path) -> None:
     with pytest.raises(RuntimeError, match="API key"):
         with TestClient(app):
             pass
+
+
+@pytest.fixture
+def connected_development(tmp_path: Path) -> tuple[Path, Path]:
+    """Small safe validation set whose offers belong to one component."""
+    directory = tmp_path / "processed"
+    directory.mkdir()
+    validation = make_pairs(16)
+    validation["id_left"] = 99
+    training = make_pairs(8)
+    training["id_left"] += 1000
+    training["id_right"] += 1000
+    validation.to_parquet(directory / "validation_safe.parquet", index=False)
+    training.to_parquet(directory / "train.parquet", index=False)
+    manifest = {
+        "offer_overlap_audit": {
+            "train_vs_validation": 0,
+            "train_vs_test_seen": 0,
+            "train_vs_test_unseen": 0,
+            "validation_vs_test_seen": 0,
+            "validation_vs_test_unseen": 0,
+        },
+        "validation_quarantine": {
+            "safe_output": "validation_safe.parquet",
+            "safe_pair_count": len(validation),
+            "excluded_pair_count": 0,
+        },
+        "splits": {"train": {"rows": len(training)}},
+    }
+    (directory / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    model = DummyClassifier(strategy="prior").fit(
+        pd.DataFrame(
+            np.tile(np.arange(2, dtype=float)[:, None], (1, len(FEATURE_NAMES))),
+            columns=FEATURE_NAMES,
+        ),
+        [0, 1],
+    )
+    artifact = tmp_path / "trusted-model.joblib"
+    joblib.dump(
+        {
+            "model": model,
+            "feature_names": FEATURE_NAMES,
+            "decision_threshold": 0.5,
+            "model_name": "synthetic_dummy",
+        },
+        artifact,
+    )
+    return directory, artifact
+
+
+def test_connected_graph_stays_strict_by_default(
+    connected_development: tuple[Path, Path], tmp_path: Path
+) -> None:
+    directory, model = connected_development
+    artifact = tmp_path / "calibrator.joblib"
+    report = tmp_path / "calibration.json"
+    with pytest.raises(ValueError, match="too few independent"):
+        fit_calibration(
+            data_dir=directory, model_path=model,
+            output_path=artifact, report_path=report
+        )
+    assert not artifact.exists()
+    assert not report.exists()
+
+
+def test_explicit_dev_calibration_produces_no_audit_claim(
+    connected_development: tuple[Path, Path], tmp_path: Path
+) -> None:
+    directory, model = connected_development
+    artifact = tmp_path / "calibrator.joblib"
+    report = tmp_path / "calibration.json"
+    result = fit_calibration(
+        data_dir=directory,
+        model_path=model,
+        output_path=artifact,
+        report_path=report,
+        development_only=True,
+    )
+    assert result["calibration_policy"] == "development_only_full_validation"
+    assert result["calibration_pairs"] == 16
+    assert result["audit_pairs"] == 0
+    assert result["audit_available"] is False
+    assert result["audit_raw_reliability"] is None
+    assert result["audit_calibrated_reliability"] is None
+    assert result["audit_raw_at_0_5"] is None
+    assert result["audit_calibrated_at_selected_threshold"] is None
+    assert result["independent_offer_components"] == 1
+    assert 0 <= result["selected_threshold"] <= 1
+    assert json.loads(report.read_text())["audit_available"] is False
+    assert load_calibration(artifact, model)[2] == "development_only_full_validation"
+
+    service = create_app(
+        ServiceConfig(
+            model_path=model,
+            calibration_path=artifact,
+            api_key="test-api",
+            review_token="test-review",
+            review_db=tmp_path / "reviews.sqlite3",
+        )
+    )
+    with TestClient(service) as client:
+        headers = {"X-API-Key": "test-api"}
+        assert client.get("/ready", headers=headers).json()["calibration_policy"] == (
+            "development_only_full_validation"
+        )
+        response = client.post(
+            "/v1/match", headers=headers,
+            json={"left": {"title": "Acme 250 ml"}, "right": {"title": "Acme 250ml"}},
+        )
+        assert response.status_code == 200
+        assert response.json()["calibration_policy"] == "development_only_full_validation"
+        assert "NO independent audit" in response.json()["warning"]

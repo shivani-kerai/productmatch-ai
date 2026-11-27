@@ -1,4 +1,4 @@
-"""Fit a model-bound sigmoid calibrator on offer-disjoint development rows.
+"""Fit a model-bound sigmoid calibrator on leakage-safe development rows.
 
 Model selection already used the full validation_safe set in Session 3, so
 the audit partition is not an independent, unbiased model-selection test.
@@ -21,6 +21,7 @@ from productmatch.evaluation.calibration import (
     file_sha256,
     probability_logits,
     reliability_metrics,
+    offer_component_groups,
     split_for_calibration,
 )
 from productmatch.evaluation.classification import (
@@ -39,25 +40,58 @@ def fit_calibration(
     report_path: Path,
     seed: int = 42,
     audit_fraction: float = 0.3,
+    development_only: bool = False,
 ) -> dict[str, object]:
     """Calibrate a trusted frozen model without fitting or changing that model."""
     _, validation, manifest = _load_development(data_dir)
     model, _, model_name = load_model(model_path)
     raw = np.asarray(model.predict_proba(build_pairwise_features(validation))[:, 1], dtype=float)
-    train_idx, audit_idx = split_for_calibration(
-        validation, seed=seed, audit_fraction=audit_fraction
-    )
+    # Explicit opt-in: when offer graph components cannot be separated, fit
+    # only a development calibrator, with *no* independent audit metrics.
+    # This never reads either official test file or original validation.parquet.
+    if development_only:
+        train_idx = np.arange(len(validation))
+        audit_idx = np.array([], dtype=int)
+    else:
+        train_idx, audit_idx = split_for_calibration(
+            validation, seed=seed, audit_fraction=audit_fraction
+        )
+
     labels = validation["label"].to_numpy(dtype=int)
     calibration_labels = labels[train_idx]
-    diagnostic_labels = labels[audit_idx]
-
     estimator = LogisticRegression(solver="lbfgs", random_state=seed, max_iter=2000)
     estimator.fit(probability_logits(raw[train_idx]), calibration_labels)
     tuned = apply_sigmoid_calibration(estimator, raw[train_idx])
     cutoff = choose_f1_threshold(calibration_labels, tuned)
 
+    # Fitted-data metrics are resubstitution diagnostics, never model quality claims.
+    fit_raw = reliability_metrics(calibration_labels, raw[train_idx])
+    fit_calibrated = reliability_metrics(calibration_labels, tuned)
+    diagnostic_labels = labels[audit_idx]
     diagnostic_raw = raw[audit_idx]
-    diagnostic_calibrated = apply_sigmoid_calibration(estimator, diagnostic_raw)
+    diagnostic_calibrated = (
+        apply_sigmoid_calibration(estimator, diagnostic_raw)
+        if len(audit_idx)
+        else np.array([], dtype=float)
+    )
+    audit_raw = (
+        reliability_metrics(diagnostic_labels, diagnostic_raw) if len(audit_idx) else None
+    )
+    audit_calibrated = (
+        reliability_metrics(diagnostic_labels, diagnostic_calibrated)
+        if len(audit_idx)
+        else None
+    )
+    audit_raw_metrics = (
+        classification_metrics(diagnostic_labels, diagnostic_raw, 0.5)
+        if len(audit_idx)
+        else None
+    )
+    audit_tuned_metrics = (
+        classification_metrics(diagnostic_labels, diagnostic_calibrated, cutoff)
+        if len(audit_idx)
+        else None
+    )
     model_digest = file_sha256(model_path)
     safe_digest = file_sha256(Path(data_dir) / "validation_safe.parquet")
     result: dict[str, object] = {
@@ -67,10 +101,23 @@ def fit_calibration(
         "model_sha256": model_digest,
         "validation_safe_sha256": safe_digest,
         "model_selection_warning": (
-            "Session 3 previously selected the model and threshold using "
-            "validation_safe; these offer-disjoint calibration/audit partitions "
-            "are secondary development diagnostics, not unbiased held-out test metrics."
+            "Session 3 already selected the model using validation_safe. "
+            "Development-only mode reuses all validation rows for fitting, "
+            "and has NO audit set, independent metrics or generalization claim."
+            if development_only
+            else "Session 3 previously selected the model using validation_safe; "
+            "even offer-disjoint calibration/audit partitions here are secondary "
+            "development diagnostics, not unbiased held-out test metrics."
         ),
+        "calibration_policy": (
+            "development_only_full_validation"
+            if development_only
+            else "offer_disjoint_development_audit"
+        ),
+        "audit_available": not development_only,
+        "independent_offer_components": int(len(np.unique(offer_component_groups(validation)))),
+        "fit_raw_reliability_in_sample": fit_raw,
+        "fit_calibrated_reliability_in_sample": fit_calibrated,
         "source_validation_overlap_exclusions": manifest["validation_quarantine"][
             "excluded_pair_count"
         ],
@@ -80,14 +127,10 @@ def fit_calibration(
         "selected_threshold": float(cutoff),
         "seed": seed,
         "audit_fraction": audit_fraction,
-        "audit_raw_reliability": reliability_metrics(diagnostic_labels, diagnostic_raw),
-        "audit_calibrated_reliability": reliability_metrics(
-            diagnostic_labels, diagnostic_calibrated
-        ),
-        "audit_raw_at_0_5": classification_metrics(diagnostic_labels, diagnostic_raw, 0.5),
-        "audit_calibrated_at_selected_threshold": classification_metrics(
-            diagnostic_labels, diagnostic_calibrated, cutoff
-        ),
+        "audit_raw_reliability": audit_raw,
+        "audit_calibrated_reliability": audit_calibrated,
+        "audit_raw_at_0_5": audit_raw_metrics,
+        "audit_calibrated_at_selected_threshold": audit_tuned_metrics,
     }
     payload = {
         "schema_version": 1,
@@ -97,6 +140,8 @@ def fit_calibration(
         "estimator": estimator,
         "decision_threshold": float(cutoff),
         "source_validation_safe_sha256": safe_digest,
+        "calibration_policy": result["calibration_policy"],
+        "audit_available": not development_only,
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -125,6 +170,15 @@ def main() -> None:
     )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--audit-fraction", type=float, default=0.3)
+    parser.add_argument(
+        "--development-only",
+        action="store_true",
+        help=(
+            "Opt into fitting on all validation_safe pairs when offer-disjoint "
+            "calibration/audit splitting is impossible. No audit metrics are "
+            "produced; results must not be presented as independent evaluation."
+        ),
+    )
     args = parser.parse_args()
     report = fit_calibration(
         data_dir=args.data_dir,
@@ -133,6 +187,7 @@ def main() -> None:
         report_path=args.report,
         seed=args.seed,
         audit_fraction=args.audit_fraction,
+        development_only=args.development_only,
     )
     print(json.dumps(report, indent=2))
 

@@ -376,3 +376,14 @@ calibration file whose recorded SHA-256 does not match the actual model file.
 
 Authenticated metrics are at `GET /metrics` using `X-API-Key`.
 For exact configuration and limitations, see [Session 6](docs/session6.md).
+
+
+### Session 6: WDC graph prevents calibration partitioning
+
+If `scripts/calibrate_model.py` refuses with `too few independent offer
+components`, the WDC validation pairs share an offer-connected graph. The
+strict split is intentionally preserved. Run
+`scripts/calibrate_model.py --development-only` only for an explicitly
+**unaudited development demonstration**: it fits on full safe validation,
+writes no audit metrics, and does not produce unbiased calibration results.
+See `docs/session6.md` for the exact provenance policy.
