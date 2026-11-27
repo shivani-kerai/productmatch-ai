@@ -1,7 +1,7 @@
 project:
   name: productmatch-ai
-  version: 0.4.0
-  phase: session-4-candidate-retrieval
+  version: 0.5.0
+  phase: session-5-api-review-ui
 
 dataset:
   name: WDC Products pairwise

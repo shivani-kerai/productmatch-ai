@@ -1,0 +1,6 @@
+offer_id,title,brand,description,price,currency
+demo-1,Acme Shampoo 250 ml,Acme,Gentle shampoo,199,INR
+demo-2,Acme Shampoo 500 ml,Acme,Gentle shampoo,349,INR
+demo-3,Beta Digital Camera X200,Beta,Mirrorless camera,19999,INR
+demo-4,Beta Digital Camera X300,Beta,Mirrorless camera,22999,INR
+demo-5,Garden Hose 20 m,GreenCo,Water hose,399,INR
