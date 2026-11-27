@@ -7,9 +7,8 @@ development, and never silently loads benchmark data or arbitrary artifacts.
 
 from __future__ import annotations
 
-import hmac
-
 from contextlib import asynccontextmanager
+import hmac
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
