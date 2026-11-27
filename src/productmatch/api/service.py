@@ -9,13 +9,13 @@ from __future__ import annotations
 
 import hmac
 
-from productmatch.api.metrics import RequestMetrics, monotonic_seconds
 from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.responses import PlainTextResponse
 
+from productmatch.api.metrics import RequestMetrics, monotonic_seconds
 from productmatch.api.runtime import Runtime, ServiceConfig
 from productmatch.api.schemas import (
     Product,
