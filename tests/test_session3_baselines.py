@@ -31,8 +31,7 @@ def pair(left: int, right: int, label: int) -> dict[str, object]:
         "id_right": right,
         "label": label,
         "title_left": f"Acme Camera X200 {250 if same else 250}ml",
-        "title_right": f"Acme Camera {'X200' if same else 'Y300'} "
-        f"{250 if same else 500}ml",
+
         "brand_left": "Acme",
         "brand_right": "Acme" if same else "Generic",
         "description_left": "Digital camera",
@@ -50,37 +49,14 @@ def pair(left: int, right: int, label: int) -> dict[str, object]:
 def test_features_do_not_use_identity_or_label() -> None:
     row = pair(1, 2, 1)
     original = pair_features(row)
-    row.update({
-        "label": 0,
-        "pair_id": "injected-pair-id",
-        "cluster_id_left": 999999,
-        "cluster_id_right": -1,
-        "is_hard_negative": True,
-        "id_left": 900,
-        "id_right": 901,
-    })
+
     assert pair_features(row) == original
     assert len(original) == len(FEATURE_NAMES)
     assert all(np.isfinite(list(original.values())))
 
 
 def test_quantity_and_price_conflicts_are_observable() -> None:
-    same = pair_features({
-        "title_left": "Acme Shampoo 250 ml",
-        "title_right": "Acme Shampoo 0.25 l",
-        "price_left": "100",
-        "price_right": "100",
-        "priceCurrency_left": "USD",
-        "priceCurrency_right": "USD",
-    })
-    different = pair_features({
-        "title_left": "Acme Shampoo 250ml pack of 2",
-        "title_right": "Acme Shampoo 500ml pack of 3",
-        "price_left": "100",
-        "price_right": "200",
-        "priceCurrency_left": "USD",
-        "priceCurrency_right": "INR",
-    })
+
     assert same["quantity_match"] == 1.0
     assert same["price_comparable"] == 1.0
     assert different["quantity_conflict"] == 1.0
@@ -113,9 +89,7 @@ def test_reject_malformed_or_single_class_scores() -> None:
     with pytest.raises(ValueError, match="both classes"):
         choose_f1_threshold(np.array([0, 0]), np.array([0.1, 0.2]))
     with pytest.raises(ValueError, match="between 0 and 1"):
-        classification_metrics(
-            np.array([0, 1]), np.array([-0.1, 0.8])
-        )
+
 
 
 def test_error_analysis_masks_only_actual_mistakes() -> None:
@@ -130,12 +104,7 @@ def test_error_analysis_masks_only_actual_mistakes() -> None:
 def tiny_development(tmp_path: Path) -> Path:
     root = tmp_path / "dataset"
     root.mkdir()
-    training = pd.DataFrame(
-        [pair(i, i + 1, (i // 2) % 2) for i in range(0, 32, 2)]
-    )
-    validation = pd.DataFrame(
-        [pair(i, i + 1, (i - 100) % 2) for i in range(100, 116)]
-    )
+
     training.to_parquet(root / "train.parquet", index=False)
     validation.to_parquet(root / "validation_safe.parquet", index=False)
     # Deliberately write no test Parquet files.
@@ -174,9 +143,7 @@ def test_training_rejects_offer_reuse(tmp_path: Path, tiny_development: Path) ->
 
 
 @pytest.mark.parametrize("model", MODEL_CHOICES)
-def test_real_estimators_train_offline(
-    tiny_development: Path, tmp_path: Path, model: str
-) -> None:
+
     result = train_baselines(
         tiny_development,
         tmp_path / "reports",
@@ -195,8 +162,7 @@ def test_real_estimators_train_offline(
 def test_invalid_model_name(tiny_development: Path, tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="invalid"):
         train_baselines(
-            tiny_development, tmp_path / "reports", tmp_path / "artifacts",
-            model_names=["not-a-model"]
+
         )
 
 

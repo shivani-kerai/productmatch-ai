@@ -16,11 +16,7 @@ def make_estimator(name: str, seed: int = DEFAULT_SEED) -> object:
         return Pipeline(
             [
                 ("scale", StandardScaler()),
-                ("model", LogisticRegression(
-                    max_iter=2000,
-                    solver="lbfgs",
-                    random_state=seed,
-                )),
+
             ]
         )
     if name == "lightgbm":

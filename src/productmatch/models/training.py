@@ -102,7 +102,7 @@ def train_baselines(
     """Train baseline models; save local artifacts and validation error reports."""
     invalid_models = sorted(set(model_names) - set(MODEL_CHOICES))
     if invalid_models or not model_names:
-        raise ValueError(f"models must be one or more of {MODEL_CHOICES}; invalid: {invalid_models}")
+
 
     data_dir = Path(data_dir)
     train, validation, manifest = _load_development(data_dir)
@@ -183,9 +183,7 @@ def train_baselines(
         )
         for name, model_result in result["models"].items()
     ]
-    result["best_validation_model_by_ap"] = max(
-        ranks, key=lambda item: (item[1], item[0])
-    )[0]
+
     (report_dir / "metrics.json").write_text(
         json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )

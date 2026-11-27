@@ -123,24 +123,18 @@ def pair_features(row: dict[str, object]) -> dict[str, float]:
 
     currency_a = _value(row.get("priceCurrency_left")).casefold()
     currency_b = _value(row.get("priceCurrency_right")).casefold()
-    price_a, price_b = _price(_value(row.get("price_left"))), _price(
-        _value(row.get("price_right"))
-    )
+
     currencies_known = bool(currency_a and currency_b)
     prices_comparable = (
-        currencies_known and currency_a == currency_b
-        and price_a is not None and price_b is not None
+
     )
 
     feats = {
         "title_token_jaccard": _jaccard(tokens_a, tokens_b),
         "title_token_containment": (
-            len(intersection) / min(len(tokens_a), len(tokens_b))
-            if tokens_a and tokens_b else 0.0
+
         ),
-        "title_char_similarity": SequenceMatcher(
-            None, norm_a, norm_b, autojunk=False
-        ).ratio(),
+
         "title_exact": float(bool(norm_a) and norm_a == norm_b),
         "title_common_token_count": float(len(intersection)),
         "title_token_count_gap": float(abs(len(tokens_a) - len(tokens_b))),
@@ -151,35 +145,26 @@ def pair_features(row: dict[str, object]) -> dict[str, float]:
         "description_token_jaccard": _jaccard(desc_a, desc_b),
         "numeric_token_conflict": float(
             bool(numeric_a and numeric_b and not (numeric_a & numeric_b))
-        ),
-        "model_token_conflict": float(
-            bool(model_a and model_b and not (model_a & model_b))
+
         ),
         "quantity_known": float(quantity_a is not None and quantity_b is not None),
         "quantity_match": float(
-            quantity_a is not None and quantity_b is not None
-            and quantity_a == quantity_b
+
         ),
         "quantity_conflict": float(
-            quantity_a is not None and quantity_b is not None
-            and quantity_a != quantity_b
+
         ),
         "pack_count_known": float(pack_a is not None and pack_b is not None),
-        "pack_count_match": float(
-            pack_a is not None and pack_b is not None and pack_a == pack_b
-        ),
+
         "pack_count_conflict": float(
             pack_a is not None and pack_b is not None and pack_a != pack_b
         ),
         "price_comparable": float(prices_comparable),
         "price_relative_gap": (
-            abs(price_a - price_b) / max(price_a, price_b)
-            if prices_comparable else 0.0
+
         ),
         "currency_known": float(currencies_known),
-        "currency_conflict": float(
-            currencies_known and currency_a != currency_b
-        ),
+
     }
     return {name: float(feats[name]) for name in FEATURE_NAMES}
 
@@ -190,9 +175,6 @@ def build_pairwise_features(pairs: pd.DataFrame) -> pd.DataFrame:
     if missing:
         raise ValueError(f"missing required title attributes: {sorted(missing)}")
     columns = [name for name in ATTRIBUTE_COLUMNS if name in pairs]
-    rows = (
-        pair_features(row)
-        for row in pairs.loc[:, columns].to_dict(orient="records")
-    )
+
     frame = pd.DataFrame.from_records(rows, columns=list(FEATURE_NAMES))
     return frame.astype("float64")
