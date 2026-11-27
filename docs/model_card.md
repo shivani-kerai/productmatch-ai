@@ -1,17 +1,31 @@
-# Model card — not yet trained
+# Model card — Session 3 development baselines
 
-**Status:** Session 1. There is no fitted model or product-match decision API.
+Two **pairwise** classifiers are implemented: standardized logistic regression
+and LightGBM trained on supervised WDC Products medium pairwise training data.
+No benchmark validation scores are published in this repository; run the
+local experiment to produce evidence before citing performance in a portfolio.
 
-The `features` CLI produces normalization and Jaccard *features*, not model probabilities.
-No accuracy, F1, recall, precision or production-readiness claims are made.
+**Data:** WDC Products, 50% corner-case pairwise benchmark.
+Training: 6,000 pairs; validation: 3,473 pairs after an explicit 27-pair
+validation quarantine caused by four overlapping official seen-test offer IDs.
+The full original validation and both test variants remain unchanged.
 
-When models are trained, document:
+**Input features:** 23 deterministic, numeric attributes from offer titles,
+brand, descriptions, mass/volume quantities, pack counts, price and currency.
+Never train on offer/pair/cluster IDs, ground truth, or hard-negative labels.
 
-1. Task definition and intended use / out-of-scope use.
-2. Training data, benchmark variant, label semantics and exact splits.
-3. Baseline, feature engineering and model hyperparameters.
-4. Validation-based threshold selection and calibration method.
-5. Held-out results and confidence intervals where suitable.
-6. Performance on hard negatives, unseen products and missing attributes.
-7. Latency, throughput, memory and monitoring plan.
-8. Known limitations, error analysis and version information.
+**Evaluation:** validation precision/recall/F1, average precision and
+hard-negative false-positive rate; fixed and validation-tuned thresholds.
+Official test labels must remain sealed until model selection is finalized.
+Validation-optimized results cannot be represented as unbiased test performance.
+
+**Privacy:** no proprietary product listings or raw benchmark data are
+committed. Model artifacts and review CSVs are local and gitignored.
+
+**Risks:** brand aliases, incomplete descriptions, model/version identifiers,
+unit inconsistencies, variable-price sales and multilingual product titles can
+degrade generalization. Treat errors on variants and pack sizes as particularly
+high-risk false matches.
+
+**Deployment:** no matching API, reviewer interface or production readiness
+claim in Session 3.

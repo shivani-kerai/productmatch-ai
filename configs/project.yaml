@@ -1,12 +1,13 @@
 project:
   name: productmatch-ai
-  version: 0.2.0
-  phase: session-2-wdc-data-preparation
+  version: 0.3.0
+  phase: session-3-supervised-baselines
 
 dataset:
   name: WDC Products pairwise
   source: https://webdatacommons.org/largescaleproductcorpus/wdc-products/index.html
-  archive: data/raw/wdc/50pair.zip
-  development_size: medium
-  corner_cases_percent: 50
   raw_data_committed: false
+  training: data/processed/wdc50_medium/train.parquet
+  validation: data/processed/wdc50_medium/validation_safe.parquet
+  test_policy: sealed-until-final-model
+  random_seed: 42
