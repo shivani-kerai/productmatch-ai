@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from productmatch.api.schemas import ReviewRecord, ReviewSubmission
@@ -43,7 +43,7 @@ class ReviewStore:
         record = ReviewRecord(
             **submission.model_dump(),
             review_id=str(uuid.uuid4()),
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
         )
         import json
 
