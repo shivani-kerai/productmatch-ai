@@ -14,6 +14,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
+from productmatch.evaluation.calibration import apply_sigmoid_calibration, file_sha256
 from productmatch.features.pairwise import FEATURE_NAMES, build_pairwise_features
 from productmatch.retrieval.benchmark import Offer
 from productmatch.retrieval.bm25 import BM25Retriever
@@ -22,6 +23,7 @@ from productmatch.retrieval.bm25 import BM25Retriever
 @dataclass(frozen=True)
 class ServiceConfig:
     model_path: Path | None = None
+    calibration_path: Path | None = None
     catalog_path: Path | None = None
     review_db: Path = Path("runtime/reviews.sqlite3")
     api_key: str = ""
@@ -31,9 +33,11 @@ class ServiceConfig:
     def from_environment(cls) -> ServiceConfig:
         """Only deployment configuration may provide local file paths."""
         model = os.getenv("PRODUCTMATCH_MODEL_PATH", "").strip()
+        calibration = os.getenv("PRODUCTMATCH_CALIBRATION_PATH", "").strip()
         catalog = os.getenv("PRODUCTMATCH_CATALOG_CSV", "").strip()
         return cls(
             model_path=Path(model) if model else None,
+            calibration_path=Path(calibration) if calibration else None,
             catalog_path=Path(catalog) if catalog else None,
             review_db=Path(os.getenv("PRODUCTMATCH_REVIEW_DB", "runtime/reviews.sqlite3")),
             api_key=os.getenv("PRODUCTMATCH_API_KEY", ""),
@@ -115,6 +119,26 @@ def match_scores(model: object, pairs: list[tuple[Offer, Offer]]) -> list[float]
     return scores.tolist()
 
 
+def load_calibration(path: Path, model_path: Path) -> tuple[object, float]:
+    """Refuse stale calibration when the serving model bytes differ."""
+    payload = joblib.load(path)
+    if not isinstance(payload, dict) or payload.get("schema_version") != 1:
+        raise ValueError("unsupported calibration artifact schema")
+    if payload.get("kind") != "sigmoid_logit":
+        raise ValueError("unsupported calibration type")
+    if tuple(payload.get("feature_names", ())) != FEATURE_NAMES:
+        raise ValueError("calibration feature schema mismatch")
+    if payload.get("model_sha256") != file_sha256(model_path):
+        raise ValueError("calibration/model SHA256 mismatch; regenerate calibration")
+    estimator = payload.get("estimator")
+    if estimator is None or not hasattr(estimator, "predict_proba"):
+        raise ValueError("calibration artifact missing sigmoid estimator")
+    threshold = float(payload.get("decision_threshold", -1))
+    if not np.isfinite(threshold) or not 0 <= threshold <= 1:
+        raise ValueError("invalid calibrated decision threshold")
+    return estimator, threshold
+
+
 class Runtime:
     """Fully initialized state, created only from local operator configuration."""
 
@@ -122,13 +146,32 @@ class Runtime:
         self.model: object | None = None
         self.model_name: str | None = None
         self.threshold: float | None = None
+        self.calibrator: object | None = None
+        self.model_fingerprint: str | None = None
         self.catalog: tuple[Offer, ...] = ()
         self.offers: dict[str, Offer] = {}
         self.retriever: BM25Retriever | None = None
 
+        if config.calibration_path is not None and config.model_path is None:
+            raise ValueError("calibration requires PRODUCTMATCH_MODEL_PATH")
         if config.model_path is not None:
             self.model, self.threshold, self.model_name = load_model(config.model_path)
+            self.model_fingerprint = file_sha256(config.model_path)[:12]
+            if config.calibration_path is not None:
+                self.calibrator, self.threshold = load_calibration(
+                    config.calibration_path, config.model_path
+                )
         if config.catalog_path is not None:
             self.catalog = load_catalog(config.catalog_path)
             self.offers = {offer.offer_id: offer for offer in self.catalog}
             self.retriever = BM25Retriever(self.catalog)
+
+
+    def score_pairs(self, pairs: list[tuple[Offer, Offer]]) -> list[float]:
+        """Apply compatible calibration to trusted model probabilities, if configured."""
+        if self.model is None:
+            raise ValueError("no matching model configured")
+        raw = match_scores(self.model, pairs)
+        if not raw or self.calibrator is None:
+            return raw
+        return apply_sigmoid_calibration(self.calibrator, raw).tolist()

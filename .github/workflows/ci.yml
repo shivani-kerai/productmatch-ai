@@ -34,6 +34,9 @@ jobs:
       - name: Tests and coverage
         run: python -m pytest -q --cov=productmatch --cov-report=term-missing --cov-fail-under=75
 
+      - name: Calibration CLI smoke test
+        run: python scripts/calibrate_model.py --help
+
       - name: API import smoke test
         run: python -c "from productmatch.api.service import app; print(app.title)"
 

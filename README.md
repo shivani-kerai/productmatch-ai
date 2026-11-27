@@ -7,7 +7,7 @@ represent the **same sellable product**. It will combine product attribute norma
 lexical and semantic retrieval, supervised pairwise matching, confidence calibration,
 human review, API serving, evaluation, and monitoring.
 
-> **Current status: Session 5 API and review UI development (v0.5.0).** The repository is runnable and tested,
+> **Current status: Session 6 calibration and monitoring development (v0.6.0).** The repository is runnable and tested,
 > but **does not contain a trained matching model, a production match decision, or WDC
 > benchmark data**. The demonstration CLI computes simple text features only.
 
@@ -340,3 +340,39 @@ For Docker-only local deployment, see [Session 5](docs/session5.md).
 **Security:** Never expose this prototype on the public Internet, publish
 runtime SQLite data, trust user-submitted joblib models, or treat the uncalibrated
 validation threshold as a production decision. Human reviews do not retrain the model.
+
+
+---
+
+## Session 6 — development calibration, observability and hardened local deployment
+
+Session 6 adds **offer-component-disjoint sigmoid calibration** of a frozen
+Session 3 estimator, reliability diagnostics (Brier score and ECE), SHA-256
+binding of the calibration artifact to exact model bytes, and authenticated
+Prometheus-compatible request counters and latency histograms. The request
+metrics deliberately exclude raw queries, product titles and reviewer details.
+
+> **Scientific caveat:** Session 3 already selected its model using the entire
+> validation_safe split. An offer-disjoint split within that same validation
+> file can measure development calibration behavior, but **does not create a
+> statistically independent model-selection test set**. Do not claim unbiased
+> external calibration or production-ready probabilities from this procedure.
+
+In PowerShell after running Session 3 model training:
+
+```powershell
+cd C:\productmatch-ai
+git fetch origin
+git switch feature/session-6-calibration-monitoring
+.\.venv\Scripts\python.exe -m pip install -e ".[dev,data,models,service,ui]"
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe scripts/calibrate_model.py
+```
+
+To enable optional calibration in the local API terminal, configure the same
+trusted model path and `PRODUCTMATCH_CALIBRATION_PATH` pointing to
+`artifacts/session6_calibration/sigmoid.joblib`. The API refuses to serve a
+calibration file whose recorded SHA-256 does not match the actual model file.
+
+Authenticated metrics are at `GET /metrics` using `X-API-Key`.
+For exact configuration and limitations, see [Session 6](docs/session6.md).
