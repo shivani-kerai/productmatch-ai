@@ -19,9 +19,9 @@ from productmatch.api.runtime import load_model
 from productmatch.evaluation.calibration import (
     apply_sigmoid_calibration,
     file_sha256,
+    offer_component_groups,
     probability_logits,
     reliability_metrics,
-    offer_component_groups,
     split_for_calibration,
 )
 from productmatch.evaluation.classification import (
