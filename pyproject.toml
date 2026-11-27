@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "productmatch-ai"
-version = "0.3.0"
-description = "Reproducible product matching with leakage-safe supervised baselines."
+version = "0.4.0"
+description = "Reproducible product matching with retrieval and supervised ranking."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = "MIT"
@@ -27,6 +27,12 @@ data = [
 models = [
     "lightgbm>=4.5,<5",
     "joblib>=1.4,<2",
+]
+retrieval = [
+    "sentence-transformers>=3,<6",
+]
+faiss = [
+    "faiss-cpu>=1.8,<2",
 ]
 
 [project.scripts]

@@ -1,15 +1,14 @@
-# Next milestone — Session 4: retrieval + ranking
+# Next milestone — Session 5: service and human review
 
-Session 3 adds explicit pairwise feature engineering, logistic regression and
-LightGBM, development validation threshold tuning, AP/F1, hard-negative error
-analysis, saved artifacts and reproducibility metadata.
+Session 4 adds BM25 and dense candidate generation, rank fusion,
+optional supervised reranking, and development-only retrieval diagnostics.
 
 Next:
-1. Run Session 3 locally on the full WDC train and safe validation sets.
-2. Inspect high-confidence false positives for size, pack count and model variants.
-3. Add calibrated probability metrics with proper held-out calibration splits.
-4. Construct a **separate labeled retrieval evaluation dataset** (catalog/query
-   design); pairwise pairs are insufficient to claim catalog Recall@K.
-5. Benchmark candidate generation (BM25 and embeddings) with Recall@K, latency,
-   and realistic catalog cardinality.
-6. Preserve unseen/seen official test files until final evaluation.
+1. Inspect local Session 4 candidate retrieval results for 1/5/10 cutoff
+   recovery and latency.
+2. Build an independent, exhaustively labeled query/catalog benchmark to
+   measure actual catalog Recall@K; WDC pairwise labels are incomplete.
+3. Build FastAPI endpoints for candidate search and pairwise scoring.
+4. Create a Streamlit review interface for high-confidence errors and uncertain matches.
+5. Save model and dataset provenance; add Docker, API tests and deployment.
+6. Keep official WDC test splits sealed until the final selected pipeline.
