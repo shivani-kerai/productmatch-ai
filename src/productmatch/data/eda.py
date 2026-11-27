@@ -11,9 +11,16 @@ from collections.abc import Mapping
 import pandas as pd
 
 EDA_FIELDS = (
-    "title_left", "title_right", "brand_left", "brand_right",
-    "description_left", "description_right", "price_left", "price_right",
-    "priceCurrency_left", "priceCurrency_right",
+    "title_left",
+    "title_right",
+    "brand_left",
+    "brand_right",
+    "description_left",
+    "description_right",
+    "price_left",
+    "price_right",
+    "priceCurrency_left",
+    "priceCurrency_right",
 )
 
 
@@ -56,7 +63,8 @@ def profile_split(df: pd.DataFrame) -> dict[str, object]:
         result["hard_negatives_labeled_true"] = int(hard_negatives.eq(True).sum())
         result["hard_negative_fraction_among_labeled_negatives"] = (
             round(float(hard_negatives.dropna().astype(float).mean()), 4)
-            if hard_negatives.notna().any() else None
+            if hard_negatives.notna().any()
+            else None
         )
     return result
 

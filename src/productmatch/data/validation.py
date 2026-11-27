@@ -8,14 +8,23 @@ import pandas as pd
 
 TEXT_ATTRIBUTES = ("title", "brand", "description", "price", "priceCurrency")
 REQUIRED_COLUMNS = (
-    "pair_id", "label", "id_left", "id_right", "title_left", "title_right",
+    "pair_id",
+    "label",
+    "id_left",
+    "id_right",
+    "title_left",
+    "title_right",
 )
 OPTIONAL_COLUMNS = (
     "is_hard_negative",
     "cluster_id_left",
     "cluster_id_right",
-    *(f"{name}_{side}" for name in TEXT_ATTRIBUTES if name != "title"
-      for side in ("left", "right")),
+    *(
+        f"{name}_{side}"
+        for name in TEXT_ATTRIBUTES
+        if name != "title"
+        for side in ("left", "right")
+    ),
 )
 STANDARD_COLUMNS = (*REQUIRED_COLUMNS, *OPTIONAL_COLUMNS)
 
@@ -55,7 +64,10 @@ def validate_pairs(records: list[Mapping[str, object]], split: str) -> pd.DataFr
     if df["pair_id"].duplicated().any():
         raise DatasetValidationError(f"{split}: duplicate pair_id")
     unordered = pd.Series(
-        [tuple(sorted((int(a), int(b)))) for a, b in zip(df["id_left"], df["id_right"], strict=True)],
+        [
+            tuple(sorted((int(a), int(b))))
+            for a, b in zip(df["id_left"], df["id_right"], strict=True)
+        ],
         dtype="object",
     )
     if unordered.duplicated().any():

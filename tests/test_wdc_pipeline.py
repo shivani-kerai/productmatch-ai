@@ -42,12 +42,8 @@ def record(left: int, right: int, label: int = 0) -> dict[str, object]:
 @pytest.fixture
 def mini_zip(tmp_path: Path) -> Path:
     files = {
-        "training/wdcproducts50cc50rnd000un_train_medium.json.gz": [
-            record(1, 2, 1), record(3, 4)
-        ],
-        "validation/wdcproducts50cc50rnd000un_valid_medium.json.gz": [
-            record(5, 6, 1)
-        ],
+        "training/wdcproducts50cc50rnd000un_train_medium.json.gz": [record(1, 2, 1), record(3, 4)],
+        "validation/wdcproducts50cc50rnd000un_valid_medium.json.gz": [record(5, 6, 1)],
         "test/wdcproducts50cc50rnd000un_test.json.gz": [record(7, 8)],
         "test/wdcproducts50cc50rnd100un_test.json.gz": [record(7, 9)],
     }
@@ -79,13 +75,9 @@ def test_missing_role_or_ambiguous_role_fails_closed() -> None:
         select_split_members(["train_medium.json.gz"])
 
 
-def test_pipeline_produces_reproducible_official_splits(
-    mini_zip: Path, tmp_path: Path
-) -> None:
+def test_pipeline_produces_reproducible_official_splits(mini_zip: Path, tmp_path: Path) -> None:
     target = tmp_path / "processed"
-    manifest = prepare_dataset(
-        mini_zip, target, enforce_official_counts=False
-    )
+    manifest = prepare_dataset(mini_zip, target, enforce_official_counts=False)
     assert manifest["splits"]["train"]["rows"] == 2
     assert manifest["splits"]["validation"]["rows"] == 1
     assert manifest["offer_overlap_audit"]["train_vs_validation"] == 0
@@ -127,7 +119,8 @@ def test_source_validation_overlap_requires_explicit_quarantine(
             record(1, 2, 1),
         ],
         "validation/wdcproducts50cc50rnd000un_valid_medium.json.gz": [
-            record(3, 4, 1), record(5, 6, 0),
+            record(3, 4, 1),
+            record(5, 6, 0),
         ],
         "test/wdcproducts50cc50rnd000un_gs.json.gz": [
             record(3, 7, 0),
@@ -158,9 +151,5 @@ def test_source_validation_overlap_requires_explicit_quarantine(
     assert manifest["validation_quarantine"]["excluded_pair_count"] == 1
     assert manifest["validation_quarantine"]["safe_pair_count"] == 1
     assert len(pd.read_parquet(destination / "validation.parquet")) == 2
-    assert list(pd.read_parquet(destination / "validation_safe.parquet")["pair_id"]) == [
-        "5#6"
-    ]
-    assert list(pd.read_parquet(destination / "test_seen.parquet")["pair_id"]) == [
-        "3#7"
-    ]
+    assert list(pd.read_parquet(destination / "validation_safe.parquet")["pair_id"]) == ["5#6"]
+    assert list(pd.read_parquet(destination / "test_seen.parquet")["pair_id"]) == ["3#7"]

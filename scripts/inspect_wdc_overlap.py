@@ -21,16 +21,12 @@ from productmatch.data.validation import find_offer_overlaps, validate_pairs
 
 def _related_pairs(frame: pd.DataFrame, offer_id: int) -> pd.DataFrame:
     """Return rows containing the given offer ID on either side."""
-    return frame.loc[
-        (frame["id_left"] == offer_id) | (frame["id_right"] == offer_id)
-    ]
+    return frame.loc[(frame["id_left"] == offer_id) | (frame["id_right"] == offer_id)]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--source", type=Path, default=Path("data/raw/wdc/50pair.zip")
-    )
+    parser.add_argument("--source", type=Path, default=Path("data/raw/wdc/50pair.zip"))
     parser.add_argument("--train-member")
     parser.add_argument("--validation-member")
     parser.add_argument("--test-seen-member")

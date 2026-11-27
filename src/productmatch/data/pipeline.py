@@ -95,8 +95,9 @@ def prepare_dataset(
 
     excluded_pairs = len(splits["validation"]) - len(validation_safe)
     source_digest = (
-        file_sha256(source) if source.is_file() else
-        {role: file_sha256(source / member) for role, member in members.items()}
+        file_sha256(source)
+        if source.is_file()
+        else {role: file_sha256(source / member) for role, member in members.items()}
     )
     manifest: dict[str, object] = {
         "pipeline_version": PIPELINE_VERSION,
@@ -109,16 +110,12 @@ def prepare_dataset(
                 "rows": len(df),
                 "positive": int(df["label"].sum()),
                 "negative": int((df["label"] == 0).sum()),
-                "unique_offers": len(
-                    set(df["id_left"].tolist()) | set(df["id_right"].tolist())
-                ),
+                "unique_offers": len(set(df["id_left"].tolist()) | set(df["id_right"].tolist())),
             }
             for role, df in splits.items()
         },
         "offer_overlap_audit": overlaps,
-        "source_offer_overlap_counts": {
-            name: len(ids) for name, ids in source_shared.items()
-        },
+        "source_offer_overlap_counts": {name: len(ids) for name, ids in source_shared.items()},
         "validation_quarantine": {
             "enabled": quarantine_validation_overlap,
             "excluded_offer_ids": leaked_validation_ids if quarantine_validation_overlap else [],

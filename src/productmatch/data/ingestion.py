@@ -44,7 +44,8 @@ def available_members(source: Path) -> list[str]:
     if source.is_file() and source.suffix.lower() == ".zip":
         with ZipFile(source) as archive:
             return sorted(
-                member.filename for member in archive.infolist()
+                member.filename
+                for member in archive.infolist()
                 if not member.is_dir() and member.filename.lower().endswith(".json.gz")
             )
     raise FileNotFoundError(f"expected a .zip archive or extracted directory: {source}")
@@ -86,9 +87,7 @@ def select_split_members(
         if role in overrides:
             member = overrides[role]
             if member not in members:
-                raise SplitSelectionError(
-                    f"{role}: member {member!r} not in archive: {members}"
-                )
+                raise SplitSelectionError(f"{role}: member {member!r} not in archive: {members}")
             selected[role] = member
             continue
         candidates = _role_candidates(members, role)

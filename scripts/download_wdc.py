@@ -31,8 +31,7 @@ def download_official(destination: Path) -> tuple[int, str]:
     temporary_name = ""
     try:
         with tempfile.NamedTemporaryFile(
-            mode="wb", prefix=".wdc-", suffix=".part",
-            dir=destination.parent, delete=False
+            mode="wb", prefix=".wdc-", suffix=".part", dir=destination.parent, delete=False
         ) as temporary:
             temporary_name = temporary.name
             request = urllib.request.Request(
@@ -58,9 +57,7 @@ def download_official(destination: Path) -> tuple[int, str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--dest", type=Path, default=Path("data/raw/wdc/50pair.zip")
-    )
+    parser.add_argument("--dest", type=Path, default=Path("data/raw/wdc/50pair.zip"))
     args = parser.parse_args()
     size, digest = download_official(args.dest)
     print(f"Saved {args.dest} ({size:,} bytes) SHA256={digest}")

@@ -17,9 +17,7 @@ from productmatch.data.eda import development_summary
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--data", type=Path, default=Path("data/processed/wdc50_medium")
-    )
+    parser.add_argument("--data", type=Path, default=Path("data/processed/wdc50_medium"))
     parser.add_argument("--output", type=Path, default=Path("reports/wdc_eda"))
     args = parser.parse_args()
 
@@ -45,8 +43,7 @@ def main() -> None:
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
     for ax, (name, frame) in zip(axes, frames.items(), strict=True):
         frame["label"].value_counts().reindex([0, 1], fill_value=0).plot.bar(ax=ax)
-        ax.set(title=f"{name} label distribution", xlabel="0=nonmatch, 1=match",
-               ylabel="Pairs")
+        ax.set(title=f"{name} label distribution", xlabel="0=nonmatch, 1=match", ylabel="Pairs")
     fig.tight_layout()
     fig.savefig(args.output / "label_balance.png", dpi=140)
     plt.close(fig)
