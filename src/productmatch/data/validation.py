@@ -90,17 +90,18 @@ def validate_pairs(records: list[Mapping[str, object]], split: str) -> pd.DataFr
     return df.loc[:, list(STANDARD_COLUMNS)].reset_index(drop=True)
 
 
-def audit_offers_across_splits(splits: Mapping[str, pd.DataFrame]) -> dict[str, int]:
-    """Check train/validation against each other and each test variant.
+def find_offer_overlaps(
+    splits: Mapping[str, pd.DataFrame],
+) -> dict[str, list[int]]:
+    """Report shared offer IDs without modifying or discarding benchmark records.
 
-    Alternative test variants can legitimately reuse test offers, so they are
-    deliberately not compared against one another.
+    WDC pairwise test variants may share offers *with each other*, but the
+    development and evaluation split boundaries should be disjoint.
     """
-
-    def offers(df: pd.DataFrame) -> set[int]:
-        return set(df["id_left"].astype(int)) | set(df["id_right"].astype(int))
-
-    offer_sets = {name: offers(df) for name, df in splits.items()}
+    offer_sets = {
+        name: set(df["id_left"].astype(int)) | set(df["id_right"].astype(int))
+        for name, df in splits.items()
+    }
     checks = (
         ("train", "validation"),
         ("train", "test_seen"),
@@ -108,14 +109,25 @@ def audit_offers_across_splits(splits: Mapping[str, pd.DataFrame]) -> dict[str, 
         ("validation", "test_seen"),
         ("validation", "test_unseen"),
     )
-    audited: dict[str, int] = {}
+    shared: dict[str, list[int]] = {}
     for left, right in checks:
         if left not in offer_sets or right not in offer_sets:
             raise DatasetValidationError(f"missing split for audit: {left} or {right}")
-        overlap = len(offer_sets[left] & offer_sets[right])
-        audited[f"{left}_vs_{right}"] = overlap
-        if overlap:
+        shared[f"{left}_vs_{right}"] = sorted(offer_sets[left] & offer_sets[right])
+    return shared
+
+
+def audit_offers_across_splits(splits: Mapping[str, pd.DataFrame]) -> dict[str, int]:
+    """Fail closed when train/validation overlaps with evaluation data."""
+    shared = find_offer_overlaps(splits)
+    result: dict[str, int] = {}
+    for name, ids in shared.items():
+        result[name] = len(ids)
+        if ids:
+            left, right = name.split("_vs_")
             raise DatasetValidationError(
-                f"offer leakage between {left} and {right}: {overlap} shared offer IDs"
+                f"offer leakage between {left} and {right}: {len(ids)} shared offer IDs; "
+                f"first IDs: {ids[:10]}. "
+                "Run python scripts/inspect_wdc_overlap.py to inspect selected files."
             )
-    return audited
+    return result

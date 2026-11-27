@@ -5,6 +5,7 @@ import pytest
 from productmatch.data.validation import (
     DatasetValidationError,
     audit_offers_across_splits,
+    find_offer_overlaps,
     validate_pairs,
 )
 
@@ -86,3 +87,17 @@ def test_alternative_tests_may_share_offers() -> None:
         "test_unseen": validate_pairs([pair(5, 7)], "test_unseen"),
     }
     assert all(overlap == 0 for overlap in audit_offers_across_splits(splits).values())
+
+
+def test_overlap_report_exposes_ids_without_altering_splits() -> None:
+    splits = {
+        "train": validate_pairs([pair(1, 2)], "train"),
+        "validation": validate_pairs([pair(3, 4)], "validation"),
+        "test_seen": validate_pairs([pair(3, 5)], "test_seen"),
+        "test_unseen": validate_pairs([pair(6, 7)], "test_unseen"),
+    }
+    report = find_offer_overlaps(splits)
+    assert report["validation_vs_test_seen"] == [3]
+    assert report["train_vs_validation"] == []
+    with pytest.raises(DatasetValidationError, match="first IDs: \\[3\\]"):
+        audit_offers_across_splits(splits)

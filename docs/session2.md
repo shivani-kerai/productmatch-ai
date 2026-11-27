@@ -56,3 +56,30 @@ The official archive could not be fetched in the execution environment used to a
 **Dataset:** https://webdatacommons.org/largescaleproductcorpus/wdc-products/index.html
 
 **Upstream creation code:** https://github.com/wbsg-uni-mannheim/wdcproducts
+
+
+## Diagnosing cross-split offer overlap
+
+If `prepare_data.py` raises `DatasetValidationError` for shared IDs between
+validation and a test split, **do not disable leakage checks or randomly split data**.
+The WDC Products documentation states that offer records should be disjoint across
+training, validation and test.
+
+After `git pull` on the feature branch, run:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/inspect_wdc_overlap.py
+```
+
+The script lists the four selected archive members, their row counts and all
+cross-split shared IDs. For a limited display of titles of overlapping offers,
+add `--show-titles`. It does not write files or alter any data.
+
+Check that the paths come from the same WDC Products 50% pairwise configuration:
+`wdcproducts50cc50rnd000un_train_medium`,
+`wdcproducts50cc50rnd000un_valid_medium`, and the
+`000un` and `100un` gold standards.
+
+Do not proceed to a leakage-removal workaround until the exact paths and IDs have
+been inspected. Filtering validation pairs would change the official benchmark
+and must be recorded explicitly if later chosen.
