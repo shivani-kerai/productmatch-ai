@@ -18,9 +18,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pairs-csv", type=Path, required=True)
     parser.add_argument("--provenance-json", type=Path, required=True)
-    parser.add_argument(
-        "--development-dir", type=Path, default=Path("data/processed/wdc50_medium")
-    )
+    parser.add_argument("--development-dir", type=Path, default=Path("data/processed/wdc50_medium"))
     parser.add_argument(
         "--model-path",
         type=Path,

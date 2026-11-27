@@ -31,36 +31,40 @@ from scripts.smoke_local_api import validate_local_url
 def external_data(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
     development = tmp_path / "data"
     development.mkdir()
-    train = pd.DataFrame(
-        {"id_left": [1, 2], "id_right": [3, 4]}
-    )
-    validation = pd.DataFrame(
-        {"id_left": [5, 6], "id_right": [7, 8]}
-    )
+    train = pd.DataFrame({"id_left": [1, 2], "id_right": [3, 4]})
+    validation = pd.DataFrame({"id_left": [5, 6], "id_right": [7, 8]})
     train.to_parquet(development / "train.parquet", index=False)
     validation.to_parquet(development / "validation_safe.parquet", index=False)
     pairs_path = tmp_path / "holdout.csv"
     pd.DataFrame(
         [
             {
-                "id_left": "new-1", "id_right": "new-2",
+                "id_left": "new-1",
+                "id_right": "new-2",
                 "title_left": "Acme shampoo 250ml",
-                "title_right": "Acme shampoo 250 ml", "label": 1,
+                "title_right": "Acme shampoo 250 ml",
+                "label": 1,
             },
             {
-                "id_left": "new-3", "id_right": "new-4",
+                "id_left": "new-3",
+                "id_right": "new-4",
                 "title_left": "Acme shampoo 250ml",
-                "title_right": "Beta DSLR camera 1000", "label": 0,
+                "title_right": "Beta DSLR camera 1000",
+                "label": 0,
             },
             {
-                "id_left": "new-5", "id_right": "new-6",
+                "id_left": "new-5",
+                "id_right": "new-6",
                 "title_left": "Beta lens X200",
-                "title_right": "Beta lens X200", "label": 1,
+                "title_right": "Beta lens X200",
+                "label": 1,
             },
             {
-                "id_left": "new-7", "id_right": "new-8",
+                "id_left": "new-7",
+                "id_right": "new-8",
                 "title_left": "Garden hose 20m",
-                "title_right": "Garden hose 50m", "label": 0,
+                "title_right": "Garden hose 50m",
+                "label": 0,
             },
         ]
     ).to_csv(pairs_path, index=False)
@@ -117,8 +121,12 @@ def test_external_evaluation_produces_only_synthetic_report(
     root, pairs, meta, model = external_data
     output = tmp_path / "session7" / "scores.json"
     report = evaluate_external_pairs(
-        pairs_csv=pairs, provenance_json=meta, model_path=model,
-        development_dir=root, report_path=output, allow_demo=True
+        pairs_csv=pairs,
+        provenance_json=meta,
+        model_path=model,
+        development_dir=root,
+        report_path=output,
+        allow_demo=True,
     )
     assert report["evaluation_type"] == "synthetic_demo"
     assert report["official_wdc_test_sets_read"] is False
@@ -128,17 +136,17 @@ def test_external_evaluation_produces_only_synthetic_report(
     assert report["metrics"]["raw"]["classification"]["pairs"] == 4
     assert output.exists()
     evidence = write_evidence_report(
-        pairwise_path=output, retrieval_path=None, smoke_path=None,
-        report_dir=tmp_path / "portfolio"
+        pairwise_path=output,
+        retrieval_path=None,
+        smoke_path=None,
+        report_dir=tmp_path / "portfolio",
     )
     assert evidence["pairwise_status"] == "synthetic_demo_only"
     markdown = (tmp_path / "portfolio" / "portfolio_summary.md").read_text()
     assert "Do not cite these numbers" in markdown
 
 
-def test_reused_offer_is_rejected(
-    external_data: tuple[Path, Path, Path, Path]
-) -> None:
+def test_reused_offer_is_rejected(external_data: tuple[Path, Path, Path, Path]) -> None:
     root, pairs, _, _ = external_data
     frame = pd.read_csv(pairs, dtype="string")
     frame.loc[0, "id_left"] = "1"
@@ -146,9 +154,7 @@ def test_reused_offer_is_rejected(
         audit_holdout(frame, root)
 
 
-def test_reversed_duplicate_is_rejected(
-    external_data: tuple[Path, Path, Path, Path]
-) -> None:
+def test_reversed_duplicate_is_rejected(external_data: tuple[Path, Path, Path, Path]) -> None:
     root, pairs, _, _ = external_data
     frame = pd.read_csv(pairs, dtype="string")
     frame.loc[1, "id_left"] = "new-2"
@@ -157,9 +163,7 @@ def test_reversed_duplicate_is_rejected(
         audit_holdout(frame, root)
 
 
-def test_external_data_requires_both_classes(
-    external_data: tuple[Path, Path, Path, Path]
-) -> None:
+def test_external_data_requires_both_classes(external_data: tuple[Path, Path, Path, Path]) -> None:
     root, pairs, _, _ = external_data
     frame = pd.read_csv(pairs, dtype="string")
     frame["label"] = "1"
@@ -221,9 +225,7 @@ def test_local_smoke_url_guard() -> None:
             validate_local_url(url)
 
 
-def test_smoke_works_only_against_operator_loopback(
-    tmp_path: Path
-) -> None:
+def test_smoke_works_only_against_operator_loopback(tmp_path: Path) -> None:
     # In-process API contract verification. The CLI smoke still needs a real
     # local server process and never claims it is publicly deployed.
     app = create_app(

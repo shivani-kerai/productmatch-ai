@@ -55,8 +55,13 @@ def run_smoke(
     ) as client:
 
         def check(
-            name: str, method: str, route: str, *, protected: bool,
-            payload: dict[str, object] | None = None, expected: int = 200
+            name: str,
+            method: str,
+            route: str,
+            *,
+            protected: bool,
+            payload: dict[str, object] | None = None,
+            expected: int = 200,
         ) -> httpx.Response:
             headers = {"X-API-Key": api_key} if protected else {}
             start = time.perf_counter()
@@ -90,12 +95,18 @@ def run_smoke(
             }
         if ready.get("catalog_ready"):
             check(
-                "candidate_search", "POST", "/v1/search", protected=True,
+                "candidate_search",
+                "POST",
+                "/v1/search",
+                protected=True,
                 payload={"query": {"title": "Example Shampoo 250ml"}, "top_k": 2},
             )
         if ready.get("model_ready"):
             check(
-                "pairwise_model_scoring", "POST", "/v1/match", protected=True,
+                "pairwise_model_scoring",
+                "POST",
+                "/v1/match",
+                protected=True,
                 payload={
                     "left": {"title": "Example Shampoo 250 ml"},
                     "right": {"title": "Example Shampoo 500 ml"},
@@ -104,8 +115,13 @@ def run_smoke(
         check("protected_metrics", "GET", "/metrics", protected=True)
         check("reviews_requires_separate_token", "GET", "/v1/reviews", protected=True, expected=403)
 
-    required = {"liveness", "readiness_unauthenticated", "readiness_authenticated",
-                "protected_metrics", "reviews_requires_separate_token"}
+    required = {
+        "liveness",
+        "readiness_unauthenticated",
+        "readiness_authenticated",
+        "protected_metrics",
+        "reviews_requires_separate_token",
+    }
     observed = {entry["check"] for entry in checks}
     passed = required <= observed and all(entry["passed"] for entry in checks)
     report: dict[str, object] = {
@@ -127,9 +143,7 @@ def run_smoke(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default="http://127.0.0.1:8000")
-    parser.add_argument(
-        "--output", type=Path, default=Path("reports/session7/local_smoke.json")
-    )
+    parser.add_argument("--output", type=Path, default=Path("reports/session7/local_smoke.json"))
     parser.add_argument("--timeout", type=float, default=8.0)
     args = parser.parse_args()
     result = run_smoke(

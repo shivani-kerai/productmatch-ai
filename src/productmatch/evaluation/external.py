@@ -35,9 +35,10 @@ def validate_provenance(manifest: dict[str, object], *, allow_demo: bool) -> dic
         raise ValueError("provenance label_origin must be human_reviewed or synthetic_demo")
     if origin == "synthetic_demo" and not allow_demo:
         raise ValueError("synthetic demo labels require explicit --allow-demo")
-    if not isinstance(manifest.get("annotation_protocol"), str) or not manifest[
-        "annotation_protocol"
-    ].strip():
+    if (
+        not isinstance(manifest.get("annotation_protocol"), str)
+        or not manifest["annotation_protocol"].strip()
+    ):
         raise ValueError("provenance must describe the annotation_protocol")
     if not isinstance(manifest.get("source"), str) or not manifest["source"].strip():
         raise ValueError("provenance must identify source")
@@ -58,9 +59,7 @@ def _id_set(frame: pd.DataFrame) -> set[str]:
     return set(frame["id_left"].astype(str)) | set(frame["id_right"].astype(str))
 
 
-def audit_holdout(
-    pairs: pd.DataFrame, development_dir: Path
-) -> dict[str, int | str]:
+def audit_holdout(pairs: pd.DataFrame, development_dir: Path) -> dict[str, int | str]:
     """Fail on reused offer identities, duplicate/reversed pairs or malformed labels."""
     missing = REQUIRED_COLUMNS - set(pairs)
     if missing:
@@ -143,10 +142,7 @@ def evaluate_external_pairs(
     audit = audit_holdout(pairs, development_dir)
     model, raw_threshold, model_name = load_model(Path(model_path))
     rows = pairs.to_dict(orient="records")
-    model_pairs = [
-        (_offer_from_row(row, "left"), _offer_from_row(row, "right"))
-        for row in rows
-    ]
+    model_pairs = [(_offer_from_row(row, "left"), _offer_from_row(row, "right")) for row in rows]
     probabilities = np.asarray(match_scores(model, model_pairs), dtype=float)
     labels = pairs["label"].astype(int).to_numpy()
     raw_metrics = classification_metrics(labels, probabilities, raw_threshold)
@@ -177,9 +173,9 @@ def evaluate_external_pairs(
     result: dict[str, object] = {
         "schema_version": 1,
         "session": 7,
-        "evaluation_type": "independent_pairwise" if provenance[
-            "label_origin"
-        ] == "human_reviewed" else "synthetic_demo",
+        "evaluation_type": "independent_pairwise"
+        if provenance["label_origin"] == "human_reviewed"
+        else "synthetic_demo",
         "verification_status": provenance["verification_status"],
         "no_fitting_or_threshold_tuning_on_external_pairs": True,
         "official_wdc_test_sets_read": False,
