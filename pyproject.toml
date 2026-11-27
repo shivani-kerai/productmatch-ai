@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "productmatch-ai"
-version = "0.6.0"
-description = "Product matching with calibrated development scores and service monitoring."
+version = "0.7.0"
+description = "Product matching with independent evaluation and reproducible evidence reporting."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = "MIT"

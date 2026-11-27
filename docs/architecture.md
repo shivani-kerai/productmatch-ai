@@ -1,53 +1,49 @@
-# Architecture and implementation boundary
+# ProductMatch AI — System architecture
 
-## Status
+The following is an implementation architecture, not proof of cloud
+hosting or end-to-end benchmark quality.
 
-Session 1 implements only the local Python package, preprocessing, lexical features,
-unit tests and CI. There is **no trained model, candidate index, model API, reviewer
-queue, database, cloud deployment or monitoring system yet**.
-
-## Target workflow
-
-```text
-Source catalog(s)
-      |
-Dataset ingestion -> schema checks -> normalizing product attributes
-      |                                  |
-      +----------- lexical retrieval ---+
-      |                                  |
-      +----------- embedding retrieval -+
-                                         |
-                                  merged candidates
-                                         |
-                              supervised reranker
-                                         |
-                            calibrated scores
-                                         |
-                       +-----------------+-----------------+
-                       |                 |                 |
-                   auto-match        human review       no match
-                       |                 |                 |
-                       +-----------------+-----------------+
-                                         |
-                                review event store
-                                         |
-                              monitoring / retraining
+```mermaid
+flowchart TD
+    WDC[Official WDC pairwise source] --> Ingest[Validated ingestion and leakage audit]
+    Ingest --> Train[Train 6000 pairs]
+    Ingest --> Safe[Safe validation 3473 pairs]
+    Train --> Model[Logistic Regression / LightGBM]
+    Safe --> Threshold[Development model/threshold selection]
+    Model --> Threshold
+    Threshold --> Artifact[Frozen model artifact + SHA256]
+    Safe --> Cal[Optional development-only sigmoid calibration]
+    Artifact --> Cal
+    Cal --> Bound[Model-bound calibration artifact]
+    Catalog[Operator-provided catalog CSV] --> BM25[BM25 candidate retrieval]
+    Titles[Query product title] --> BM25
+    BM25 --> Candidates[Candidate offers]
+    Candidates --> Serve[FastAPI search / pair score]
+    Artifact --> Serve
+    Bound --> Serve
+    Serve --> Review[Streamlit reviewer UI]
+    Review --> SQLite[SQLite review records]
+    Serve --> Metrics[Authenticated route and latency metrics]
+    External[Independent human-reviewed holdout] --> Audit[Offer-ID + provenance checks]
+    Train --> Audit
+    Safe --> Audit
+    Audit --> Eval[Frozen holdout evaluation]
+    Artifact --> Eval
+    Eval --> Evidence[Evidence-gated portfolio report]
+    Metrics --> Evidence
 ```
 
-## Evaluation boundaries
+## Key boundaries
 
-- **Pairwise classification:** evaluate on official WDC pairwise train/validation/test splits.
-- **Retrieval:** create an independently specified catalog/query benchmark; selected
-  labeled pairs are not enough to establish catalog Recall@K.
-- **Model decision:** choose accept/review/reject thresholds using validation only.
-- **Production:** version scoring rules and preserve audit records for reviewer feedback.
-
-## Planned components
-
-1. Session 2: WDC schema-aware ingestion, dataset validation, EDA and lexical baseline.
-2. Week 2: engineered features, logistic regression and LightGBM.
-3. Week 3: lexical and dense candidate retrieval, FAISS, Recall@K.
-4. Week 4: reranking, score calibration, selective prediction and review feedback.
-5. Week 5: FastAPI, Streamlit, PostgreSQL (if needed), Docker, deployment and monitoring.
-
-The basic CLI is **not** a product identity classifier; its output is inspection data.
+1. **Train:** fit predictive model only using the WDC training pairs.
+2. **Development:** the safe validation set is used for model and threshold
+   selection; its optional calibration is *not* independently validated.
+3. **Sealed WDC tests:** neither official seen nor unseen test split is
+   opened in the development/calibration/evidence pipeline.
+4. **External evaluation:** independently collected labeled offers must
+   pass ID-disjointness checks against both development splits. Source
+   independence and label quality require manual audit.
+5. **Serving:** local-only operator-selected model artifacts and catalog.
+   Authentication is mandatory; human reviews do not retrain models.
+6. **Operational evidence:** counts/latency only, avoiding product titles,
+   identifiers, API keys and reviewer comments.

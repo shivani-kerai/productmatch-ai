@@ -7,7 +7,7 @@ represent the **same sellable product**. It will combine product attribute norma
 lexical and semantic retrieval, supervised pairwise matching, confidence calibration,
 human review, API serving, evaluation, and monitoring.
 
-> **Current status: Session 6 calibration and monitoring development (v0.6.0).** The repository is runnable and tested,
+> **Current status: Session 7 independent evaluation and evidence reporting (v0.7.0).** The repository is runnable and tested,
 > but **does not contain a trained matching model, a production match decision, or WDC
 > benchmark data**. The demonstration CLI computes simple text features only.
 
@@ -387,3 +387,42 @@ strict split is intentionally preserved. Run
 **unaudited development demonstration**: it fits on full safe validation,
 writes no audit metrics, and does not produce unbiased calibration results.
 See `docs/session6.md` for the exact provenance policy.
+
+
+---
+
+## Session 7 — independent evaluation and portfolio evidence
+
+Session 7 adds operator-supplied pairwise holdout evaluation, strict checks
+against *train* and *validation_safe* offer identities, frozen model and threshold
+scoring, model/data SHA-256 provenance, a local-only API smoke check, and an
+evidence-gated portfolio report. **No real benchmark result is fabricated.**
+
+```powershell
+cd C:\productmatch-ai
+git fetch origin
+git switch feature/session-7-independent-evaluation
+.\.venv\Scripts\python.exe -m pip install -e ".[dev,data,models,service]"
+.\.venv\Scripts\python.exe -m pytest -q
+
+# Generate a report with honest placeholders until external data is ready.
+.\.venv\Scripts\python.exe scripts/build_portfolio_report.py
+
+# Once a separately labeled, offer-disjoint pairwise dataset exists:
+.\.venv\Scripts\python.exe scripts/evaluate_independent.py \`
+  --pairs-csv data/processed/external/holdout.csv \`
+  --provenance-json data/processed/external/provenance.json
+
+# Add results to the portfolio report; incomplete retrieval qrels stay labeled.
+.\.venv\Scripts\python.exe scripts/build_portfolio_report.py \`
+  --pairwise reports/session7/independent_pairwise.json \`
+  --retrieval reports/session4_retrieval/retrieval_metrics.json
+```
+
+Optional: while the FastAPI service is running on localhost, invoke
+`scripts/smoke_local_api.py` in a separate terminal with the same
+`PRODUCTMATCH_API_KEY` environment variable, then pass
+`--smoke reports/session7/local_smoke.json` to the report builder.
+
+For evidence limitations, annotation provenance and system architecture,
+see [Session 7](docs/session7.md) and [Architecture](docs/architecture.md).
