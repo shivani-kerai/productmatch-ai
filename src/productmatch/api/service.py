@@ -79,7 +79,7 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
         return {"status": "ok", "service": "productmatch-ai"}
 
     @app.get("/ready")
-    def ready(_: Annotated[None, Depends(_require_api_key)]) -> dict[str, object]:
+    def ready(_: None = Depends(_require_api_key)) -> dict[str, object]:
         runtime = app.state.runtime
         return {
             "service": "productmatch-ai",
@@ -91,7 +91,7 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
 
     @app.post("/v1/match", response_model=ScoreResponse)
     def score_pair(
-        body: ScoreRequest, _: Annotated[None, Depends(_require_api_key)]
+        body: ScoreRequest, _: None = Depends(_require_api_key)
     ) -> ScoreResponse:
         runtime = app.state.runtime
         if runtime.model is None or runtime.threshold is None:
@@ -107,7 +107,7 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
 
     @app.post("/v1/search", response_model=SearchResponse)
     def search(
-        body: SearchRequest, _: Annotated[None, Depends(_require_api_key)]
+        body: SearchRequest, _: None = Depends(_require_api_key)
     ) -> SearchResponse:
         runtime = app.state.runtime
         if runtime.retriever is None:
@@ -145,13 +145,13 @@ def create_app(config: ServiceConfig | None = None) -> FastAPI:
 
     @app.post("/v1/reviews", response_model=ReviewRecord, status_code=201)
     def submit_review(
-        body: ReviewSubmission, _: Annotated[None, Depends(_require_reviewer_token)]
+        body: ReviewSubmission, _: None = Depends(_require_reviewer_token)
     ) -> ReviewRecord:
         return app.state.reviews.add(body)
 
     @app.get("/v1/reviews", response_model=list[ReviewRecord])
     def list_reviews(
-        _: Annotated[None, Depends(_require_reviewer_token)], limit: int = 100
+        _: None = Depends(_require_reviewer_token), limit: int = 100
     ) -> list[ReviewRecord]:
         if not 1 <= limit <= 500:
             raise HTTPException(status_code=422, detail="limit must be between 1 and 500")
