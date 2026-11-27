@@ -7,7 +7,7 @@ represent the **same sellable product**. It will combine product attribute norma
 lexical and semantic retrieval, supervised pairwise matching, confidence calibration,
 human review, API serving, evaluation, and monitoring.
 
-> **Current status: Session 4 candidate retrieval development (v0.4.0).** The repository is runnable and tested,
+> **Current status: Session 5 API and review UI development (v0.5.0).** The repository is runnable and tested,
 > but **does not contain a trained matching model, a production match decision, or WDC
 > benchmark data**. The demonstration CLI computes simple text features only.
 
@@ -295,3 +295,48 @@ git switch feature/session-4-candidate-retrieval
 Reports are gitignored under `reports/session4_retrieval/`. For curated
 retrieval datasets, input CSV schemas and `--complete-qrels` guidance,
 see [Session 4 documentation](docs/session4.md).
+
+
+---
+
+## Session 5 — FastAPI service and Streamlit human review
+
+The Session 5 branch introduces an operator-configured FastAPI service, authenticated
+product pair scoring and BM25 candidate search, optional supervised reranking,
+a local SQLite review audit store, a Streamlit interface, and Docker packaging.
+No cloud service has been deployed and the model is not production-calibrated.
+
+```powershell
+cd C:\productmatch-ai
+git fetch origin
+git switch feature/session-5-api-review-ui
+.\.venv\Scripts\python.exe -m pip install -e ".[dev,data,models,service,ui]"
+
+# Use strong secrets. The following generates random keys for local development.
+$env:PRODUCTMATCH_API_KEY = [Convert]::ToHexString([byte[]] (1..32 | ForEach-Object { Get-Random -Maximum 256 }))
+$env:PRODUCTMATCH_REVIEW_TOKEN = [Convert]::ToHexString([byte[]] (1..32 | ForEach-Object { Get-Random -Maximum 256 }))
+$env:PRODUCTMATCH_CATALOG_CSV = "examples/catalog_demo.csv"
+$env:PRODUCTMATCH_REVIEW_DB = "runtime/reviews.sqlite3"
+
+# Only set after you run Session 3 model training:
+# $env:PRODUCTMATCH_MODEL_PATH = "artifacts/session3_baselines/logistic_regression.joblib"
+
+.\.venv\Scripts\python.exe -m uvicorn productmatch.api.service:app --host 127.0.0.1 --port 8000
+```
+
+Run the UI in a second PowerShell terminal (set the *same* API and reviewer tokens
+in its sidebar):
+
+```powershell
+cd C:\productmatch-ai
+.\.venv\Scripts\python.exe -m streamlit run app/reviewer.py --server.address 127.0.0.1
+```
+
+The service requires both configured tokens at startup. `/health` is public;
+`/ready`, `/v1/search` and `/v1/match` use `X-API-Key`;
+`/v1/reviews` additionally requires `X-Review-Token`.
+For Docker-only local deployment, see [Session 5](docs/session5.md).
+
+**Security:** Never expose this prototype on the public Internet, publish
+runtime SQLite data, trust user-submitted joblib models, or treat the uncalibrated
+validation threshold as a production decision. Human reviews do not retrain the model.
