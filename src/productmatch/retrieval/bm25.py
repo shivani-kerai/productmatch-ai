@@ -48,9 +48,7 @@ class BM25Retriever:
             raise ValueError("top_k must be positive")
         tokens = set(tokenize(query.text))
         hits = []
-        for offer, frequencies, length in zip(
-            self.catalog, self.tokens, self.lengths, strict=True
-        ):
+        for offer, frequencies, length in zip(self.catalog, self.tokens, self.lengths, strict=True):
             if offer.offer_id == query.offer_id:
                 continue
             score = 0.0

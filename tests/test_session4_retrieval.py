@@ -121,7 +121,8 @@ def test_invalid_benchmark_and_ks(curated: RetrievalBenchmark) -> None:
             curated.catalog,
             curated.queries,
             {"q1": frozenset({"missing"}), "q2": frozenset({"b"})},
-            True, "invalid",
+            True,
+            "invalid",
         )
     with pytest.raises(ValueError, match="positive integers"):
         evaluate_retrieval(curated, BM25Retriever(curated.catalog), ks=(0,))
@@ -165,9 +166,7 @@ def test_curated_csv_inputs(tmp_path: Path) -> None:
     pd.DataFrame([{"offer_id": "q", "title": "Acme kettle"}]).to_csv(
         tmp_path / "queries.csv", index=False
     )
-    pd.DataFrame([{"query_id": "q", "offer_id": "a"}]).to_csv(
-        tmp_path / "qrels.csv", index=False
-    )
+    pd.DataFrame([{"query_id": "q", "offer_id": "a"}]).to_csv(tmp_path / "qrels.csv", index=False)
     bench = benchmark_from_curated(
         tmp_path / "catalog.csv",
         tmp_path / "queries.csv",

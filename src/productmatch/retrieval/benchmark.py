@@ -27,9 +27,7 @@ class Offer:
     @property
     def text(self) -> str:
         """Canonical, human-readable retrieval text; no IDs or ground truth."""
-        return " ".join(
-            part for part in (self.brand, self.title, self.description) if part
-        ).strip()
+        return " ".join(part for part in (self.brand, self.title, self.description) if part).strip()
 
 
 @dataclass(frozen=True)
