@@ -1,14 +1,15 @@
-# Next milestone — Session 3: Baseline product matching
+# Next milestone — Session 4: retrieval + ranking
 
-Session 2 introduces the WDC download helper, benchmark-aware schema validation, source split selection, deterministic Parquet preparation, leakage audit, EDA script/notebook, and fixture tests.
+Session 3 adds explicit pairwise feature engineering, logistic regression and
+LightGBM, development validation threshold tuning, AP/F1, hard-negative error
+analysis, saved artifacts and reproducibility metadata.
 
-Once you download the official archive locally, verify the printed member list and manifest; compare row counts and inspect the EDA reports. Please do **not** publish the raw data without checking its terms.
-
-Then implement:
-
-1. Feature extraction on official train/validation split (token Jaccard, character similarity, brand/model/quantity checks).
-2. Transparent rule baseline and logistic regression; log model parameters and train-only feature transforms.
-3. Precision, recall, F1 and PR-AUC on validation, with simple confidence intervals.
-4. Hard-negative error analysis; avoid turning entity-cluster identifiers into predictive features.
-5. Save fitted model, feature schema, and evaluation report with versioned metadata.
-6. Keep the official seen/unseen test splits sealed until final comparisons.
+Next:
+1. Run Session 3 locally on the full WDC train and safe validation sets.
+2. Inspect high-confidence false positives for size, pack count and model variants.
+3. Add calibrated probability metrics with proper held-out calibration splits.
+4. Construct a **separate labeled retrieval evaluation dataset** (catalog/query
+   design); pairwise pairs are insufficient to claim catalog Recall@K.
+5. Benchmark candidate generation (BM25 and embeddings) with Recall@K, latency,
+   and realistic catalog cardinality.
+6. Preserve unseen/seen official test files until final evaluation.

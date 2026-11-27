@@ -7,7 +7,7 @@ represent the **same sellable product**. It will combine product attribute norma
 lexical and semantic retrieval, supervised pairwise matching, confidence calibration,
 human review, API serving, evaluation, and monitoring.
 
-> **Current status: Session 2 development (v0.2.0).** The repository is runnable and tested,
+> **Current status: Session 3 supervised baseline development (v0.3.0).** The repository is runnable and tested,
 > but **does not contain a trained matching model, a production match decision, or WDC
 > benchmark data**. The demonstration CLI computes simple text features only.
 
@@ -218,3 +218,42 @@ audited option retains all original official splits and produces a separate
 `validation_safe.parquet` for model tuning. `scripts/run_eda.py` uses the safe
 copy. See [Session 2 documentation](docs/session2.md) for the observed source
 inconsistency and evaluation limitations.
+
+
+---
+
+## Session 3 — Supervised product matching baseline
+
+This branch introduces a fixed 23-feature lexical/attribute representation, plus
+scikit-learn logistic regression and LightGBM baselines. Only **train.parquet**
+and **validation_safe.parquet** are read during model development: the official
+seen/unseen test sets are never opened by the training script.
+
+```powershell
+cd C:\productmatch-ai
+git fetch origin
+git switch feature/session-3-matching-baselines
+.\.venv\Scripts\python.exe -m pip install -e ".[dev,data,models]"
+.\.venv\Scripts\python.exe scripts/train_baselines.py
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+**Prerequisite:** Session 2 must already have created
+`data/processed/wdc50_medium/validation_safe.parquet` via
+`scripts/prepare_data.py --quarantine-validation-overlap`.
+
+Generated, gitignored results:
+- `reports/session3_baselines/metrics.json`: validation precision, recall,
+  F1 at 0.5 and tuned threshold, average precision, confusion counts, provenance.
+- `reports/session3_baselines/<model>_errors.csv`: false positives/negatives,
+  sorted by error confidence for private/manual review.
+- `artifacts/session3_baselines/<model>.joblib`: saved fitted estimator,
+  frozen feature order and selected decision threshold.
+
+**Important:** threshold tuning uses the same development validation set on
+which tuned F1 is reported. Those tuned scores are development-only and can be
+optimistic; no official test score is claimed. Average precision is reported
+as non-interpolated AP, not trapezoidal PR-AUC. External benchmark comparison
+requires documenting the nonstandard leakage-safe 3,473-pair validation subset.
+
+See [Session 3 implementation notes](docs/session3.md).

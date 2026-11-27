@@ -2,7 +2,7 @@ name: Python CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, "feature/**"]
   pull_request:
 
 permissions:
@@ -29,13 +29,16 @@ jobs:
       - name: Install project and development tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev,data]"
+          python -m pip install -e ".[dev,data,models]"
 
       - name: Ruff lint
         run: python -m ruff check .
 
       - name: Ruff formatting check
         run: python -m ruff format --check .
+
+      - name: Verify Session 3 CLI
+        run: python scripts/train_baselines.py --help
 
       - name: Tests and coverage
         run: python -m pytest -q --cov=productmatch --cov-report=term-missing --cov-fail-under=75

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "productmatch-ai"
-version = "0.2.0"
-description = "Reproducible product entity-matching ingestion, validation and EDA."
+version = "0.3.0"
+description = "Reproducible product matching with leakage-safe supervised baselines."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = "MIT"
@@ -23,6 +23,10 @@ data = [
     "pyarrow>=17,<30",
     "scikit-learn>=1.5,<2",
     "matplotlib>=3.9,<4",
+]
+models = [
+    "lightgbm>=4.5,<5",
+    "joblib>=1.4,<2",
 ]
 
 [project.scripts]
