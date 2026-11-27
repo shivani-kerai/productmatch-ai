@@ -43,9 +43,7 @@ def fit_calibration(
     """Calibrate a trusted frozen model without fitting or changing that model."""
     _, validation, manifest = _load_development(data_dir)
     model, _, model_name = load_model(model_path)
-    raw = np.asarray(
-        model.predict_proba(build_pairwise_features(validation))[:, 1], dtype=float
-    )
+    raw = np.asarray(model.predict_proba(build_pairwise_features(validation))[:, 1], dtype=float)
     train_idx, audit_idx = split_for_calibration(
         validation, seed=seed, audit_fraction=audit_fraction
     )
@@ -53,9 +51,7 @@ def fit_calibration(
     calibration_labels = labels[train_idx]
     diagnostic_labels = labels[audit_idx]
 
-    estimator = LogisticRegression(
-        solver="lbfgs", random_state=seed, max_iter=2000
-    )
+    estimator = LogisticRegression(solver="lbfgs", random_state=seed, max_iter=2000)
     estimator.fit(probability_logits(raw[train_idx]), calibration_labels)
     tuned = apply_sigmoid_calibration(estimator, raw[train_idx])
     cutoff = choose_f1_threshold(calibration_labels, tuned)
@@ -88,9 +84,7 @@ def fit_calibration(
         "audit_calibrated_reliability": reliability_metrics(
             diagnostic_labels, diagnostic_calibrated
         ),
-        "audit_raw_at_0_5": classification_metrics(
-            diagnostic_labels, diagnostic_raw, 0.5
-        ),
+        "audit_raw_at_0_5": classification_metrics(diagnostic_labels, diagnostic_raw, 0.5),
         "audit_calibrated_at_selected_threshold": classification_metrics(
             diagnostic_labels, diagnostic_calibrated, cutoff
         ),
@@ -107,17 +101,13 @@ def fit_calibration(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(payload, output_path)
-    report_path.write_text(
-        json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    report_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return result
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--data-dir", type=Path, default=Path("data/processed/wdc50_medium")
-    )
+    parser.add_argument("--data-dir", type=Path, default=Path("data/processed/wdc50_medium"))
     parser.add_argument(
         "--model-path",
         type=Path,

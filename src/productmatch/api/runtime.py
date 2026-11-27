@@ -166,7 +166,6 @@ class Runtime:
             self.offers = {offer.offer_id: offer for offer in self.catalog}
             self.retriever = BM25Retriever(self.catalog)
 
-
     def score_pairs(self, pairs: list[tuple[Offer, Offer]]) -> list[float]:
         """Apply compatible calibration to trusted model probabilities, if configured."""
         if self.model is None:

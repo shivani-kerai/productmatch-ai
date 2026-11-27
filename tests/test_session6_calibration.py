@@ -43,9 +43,7 @@ def make_pairs(n: int = 40) -> pd.DataFrame:
 def test_component_split_is_offer_disjoint() -> None:
     frame = make_pairs()
     calibration, audit = split_for_calibration(frame, seed=42)
-    left_offers = set(frame.iloc[calibration]["id_left"]) | set(
-        frame.iloc[calibration]["id_right"]
-    )
+    left_offers = set(frame.iloc[calibration]["id_left"]) | set(frame.iloc[calibration]["id_right"])
     right_offers = set(frame.iloc[audit]["id_left"]) | set(frame.iloc[audit]["id_right"])
     assert not left_offers & right_offers
     assert len(calibration) + len(audit) == len(frame)
@@ -83,9 +81,7 @@ def test_log_odds_and_sigmoid() -> None:
     raw = np.array([0.1, 0.2, 0.8, 0.9])
     logits = probability_logits(raw)
     assert logits.shape == (4, 1)
-    calibrator = LogisticRegression(random_state=42).fit(
-        logits, np.array([0, 0, 1, 1])
-    )
+    calibrator = LogisticRegression(random_state=42).fit(logits, np.array([0, 0, 1, 1]))
     calibrated = apply_sigmoid_calibration(calibrator, raw)
     assert np.isfinite(calibrated).all()
     assert calibrated[0] < calibrated[-1]
