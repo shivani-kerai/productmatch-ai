@@ -131,14 +131,11 @@ def tiny_development(tmp_path: Path) -> Path:
     root = tmp_path / "dataset"
     root.mkdir()
     training = pd.DataFrame(
-        [pair(i, i + 1, i % 2) for i in range(0, 32, 2)]
+        [pair(i, i + 1, (i // 2) % 2) for i in range(0, 32, 2)]
     )
     validation = pd.DataFrame(
-        [pair(i, i + 1, i % 2) for i in range(100, 116)]
+        [pair(i, i + 1, (i - 100) % 2) for i in range(100, 116)]
     )
-    # Ensure binary labels are present (pairs use even IDs above).
-    training.loc[training.index[::2], "label"] = 1
-    validation.loc[validation.index[::2], "label"] = 1
     training.to_parquet(root / "train.parquet", index=False)
     validation.to_parquet(root / "validation_safe.parquet", index=False)
     # Deliberately write no test Parquet files.
