@@ -7,7 +7,7 @@ represent the **same sellable product**. It will combine product attribute norma
 lexical and semantic retrieval, supervised pairwise matching, confidence calibration,
 human review, API serving, evaluation, and monitoring.
 
-> **Current status: Session 3 supervised baseline development (v0.3.0).** The repository is runnable and tested,
+> **Current status: Session 4 candidate retrieval development (v0.4.0).** The repository is runnable and tested,
 > but **does not contain a trained matching model, a production match decision, or WDC
 > benchmark data**. The demonstration CLI computes simple text features only.
 
@@ -257,3 +257,41 @@ as non-interpolated AP, not trapezoidal PR-AUC. External benchmark comparison
 requires documenting the nonstandard leakage-safe 3,473-pair validation subset.
 
 See [Session 3 implementation notes](docs/session3.md).
+
+
+---
+
+## Session 4: candidate retrieval and hybrid ranking
+
+The Session 4 branch adds BM25, SentenceTransformers embeddings (optional),
+exact cosine search with optional FAISS, reciprocal-rank fusion, optional
+Session 3 pairwise reranking, and retrieval metrics with local latency.
+
+**Measurement limitation:** WDC pairwise positives are NOT exhaustive
+query/catalog judgments. The default evaluation reports **known-positive
+recovery@K**, never official catalog Recall@K. To report real Recall@K,
+use a separately curated, exhaustively judged catalog and qrels.
+
+Run in Windows PowerShell (using your existing Python 3.12 venv):
+
+```powershell
+cd C:\productmatch-ai
+git fetch origin
+git switch feature/session-4-candidate-retrieval
+.\.venv\Scripts\python.exe -m pip install -e ".[dev,data,models]"
+.\.venv\Scripts\python.exe -m pytest -q
+
+# No model download required for the BM25 diagnostic:
+.\.venv\Scripts\python.exe scripts/evaluate_retrieval.py --methods bm25
+
+# Optional dense and hybrid: downloads public model weights on first run:
+.\.venv\Scripts\python.exe -m pip install -e ".[retrieval]"
+.\.venv\Scripts\python.exe scripts/evaluate_retrieval.py --methods bm25 dense hybrid
+
+# Optional: use a trusted Session 3 local model for reranking:
+.\.venv\Scripts\python.exe scripts/evaluate_retrieval.py --methods reranked
+```
+
+Reports are gitignored under `reports/session4_retrieval/`. For curated
+retrieval datasets, input CSV schemas and `--complete-qrels` guidance,
+see [Session 4 documentation](docs/session4.md).
